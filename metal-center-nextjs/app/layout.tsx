@@ -40,7 +40,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
         />
       </head>
-      <body className="pb-16 lg:pb-0">
+      <body className="pb-24 lg:pb-0">
         <Header />
         <main>{children}</main>
         <Footer />

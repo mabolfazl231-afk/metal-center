@@ -12,6 +12,17 @@ html {
   scroll-behavior: smooth;
 }
 
+::selection {
+  background: #0A3D91;
+  color: #fff;
+}
+
+:focus-visible {
+  outline: 2px solid #0A3D91;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
 body {
   @apply bg-steel text-ink font-fa antialiased;
 }
