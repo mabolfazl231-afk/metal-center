@@ -1,8 +1,5 @@
 import type { Config } from "tailwindcss";
 
-// ===== Metal Center Design System =====
-// منبع اصلی همه‌ی توکن‌های طراحی سایت. هیچ کامپوننتی نباید رنگ/فاصله/سایه
-// را مستقیم (hardcode) بنویسد؛ همه باید از همین فایل استفاده کنند.
 const config: Config = {
   content: ["./app/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}"],
   darkMode: "class",
@@ -18,7 +15,6 @@ const config: Config = {
         success: "#00C853",
         warning: "#FFB300",
         danger: "#E53935",
-        // سطوح خنثی برای حالت روشن/تیره
         surface: {
           light: "#FFFFFF",
           dark: "#101A2C",
@@ -58,7 +54,7 @@ const config: Config = {
         "slide-up": { from: { opacity: "0", transform: "translateY(12px)" }, to: { opacity: "1", transform: "translateY(0)" } },
         "scale-in": { from: { opacity: "0", transform: "scale(.96)" }, to: { opacity: "1", transform: "scale(1)" } },
         shimmer: { "100%": { transform: "translateX(100%)" } },
-        pulse-soft: { "0%,100%": { opacity: "1" }, "50%": { opacity: ".45" } },
+        "pulse-soft": { "0%,100%": { opacity: "1" }, "50%": { opacity: ".45" } },
       },
       animation: {
         "fade-in": "fade-in .3s ease-out",
