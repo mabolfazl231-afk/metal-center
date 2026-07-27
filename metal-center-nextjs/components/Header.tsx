@@ -17,7 +17,7 @@ const NAV_LINKS = [
   { href: "/factories", label: "کارخانه‌ها", mega: "factories" as const },
   { href: "/services", label: "خدمات", mega: "services" as const },
   { href: "/knowledge", label: "مرکز دانش" },
-  { href: "/assistant", label: "✦ دستیار هوشمند" },
+  { href: "/assistant", label: "هوش مصنوعی متال metal ai" },
 ];
 
 export default function Header() {
