@@ -34,7 +34,7 @@ const organizationSchema = {
   url: siteUrl,
   logo: `${siteUrl}/brand-icon.png`,
   image: `${siteUrl}/brand-icon.png`,
-  description: "پلتفرم هوشمند قیمت‌گذاری، تأمین و خرید فولاد",
+  description: "پلتفرم هوشمند ، تأمین و خرید فولاد",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
