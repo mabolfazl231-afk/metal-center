@@ -49,12 +49,13 @@ export default function Footer() {
               متال سنتر
             </div>
             <p className="mb-5 max-w-[280px] text-[13px] leading-8">
-              پلتفرم هوشمند قیمت‌گذاری، تأمین و خرید فولاد برای پیمانکاران و صنعتگران.
+              پلتفرم هوشمند ، تأمین و خرید فولاد برای پیمانکاران و صنعتگران.
             </p>
             <div className="space-y-2 text-[12.5px]">
-              <div className="flex items-center gap-2"><Phone size={14} /> 021-9199-0000</div>
-              <div className="flex items-center gap-2"><Mail size={14} /> info@metalcenter.ir</div>
-              <div className="flex items-center gap-2"><MapPin size={14} /> تهران، خیابان آزادی</div>
+              <div className="flex items-center gap-2"><Phone size={14} /> 09197829196</div>
+              <div className="flex items-center gap-2"><Phone size={14} /> 09121083918</div>
+              <div className="flex items-center gap-2"><Phone size={14} /> 09201063918</div>
+              <div className="flex items-center gap-2"><Mail size={14} /> metalcenter.ir@gmail.com</div>
             </div>
           </div>
 
@@ -84,7 +85,7 @@ export default function Footer() {
         </div>
 
         <div className="flex flex-wrap items-center justify-between gap-2.5 border-t border-white/10 py-5 text-[12.5px] text-[#6F7F9C]">
-          <span>© ۱۴۰۴ متال سنتر. تمامی حقوق محفوظ است.</span>
+          <span>© 1405 متال سنتر. تمامی حقوق محفوظ است.</span>
           <span>ساخته‌شده برای صنعت فولاد ایران</span>
         </div>
       </div>
