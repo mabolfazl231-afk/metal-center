@@ -31,7 +31,23 @@ export const DEFAULT_SETTINGS: Settings = {
 };
 
 export type MenuItem = { id: string; label: string; href: string; sort_order: number; active: boolean };
-export type Service = { id: string; title: string; description: string; icon: string; sort_order: number; active: boolean };
+export type Service = {
+  id: string;
+  title: string;
+  description: string;
+  icon: string;
+  image_url?: string | null;
+  sort_order: number;
+  active: boolean;
+};
+export type SitePage = {
+  key: string;
+  title: string;
+  subtitle: string;
+  body: string;
+  banner_url: string | null;
+  published: boolean;
+};
 export type Article = {
   id: string;
   title: string;
@@ -96,6 +112,22 @@ export async function fetchArticles(): Promise<Article[] | null> {
     const { data, error } = await supabase.from("articles").select("*").eq("published", true).order("sort_order", { ascending: true });
     if (error || !data || data.length === 0) return null;
     return data as Article[];
+  } catch {
+    return null;
+  }
+}
+
+// بنر و متن یک صفحه؛ null یعنی هنوز در پنل ثبت نشده و عنوان پیش‌فرض صفحه نمایش داده می‌شود
+export async function fetchPage(key: string): Promise<SitePage | null> {
+  try {
+    const { data, error } = await supabase
+      .from("site_pages")
+      .select("key,title,subtitle,body,banner_url,published")
+      .eq("key", key)
+      .eq("published", true)
+      .maybeSingle();
+    if (error || !data) return null;
+    return data as SitePage;
   } catch {
     return null;
   }

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { categories as staticCategories } from "@/lib/data";
 
-// دسته‌های اصلی و زیرمجموعه‌ها از Supabase خوانده می‌شوند.
+// دسته‌های اصلی و دسته‌بندی‌های زیرشان از Supabase خوانده می‌شوند.
 // اگر دیتابیس خالی یا خطادار باشد، همان فهرست ثابت قبلی استفاده می‌شود تا سایت خالی نشود.
 
 export type CatChild = { name: string; slug: string };
@@ -12,18 +12,31 @@ export type CatNode = {
   name: string;
   slug: string;
   color: string;
+  image: string;        // عکس دلخواه از پنل؛ اگر خالی باشد، عکس پیش‌فرض یا آیکون نمایش داده می‌شود
+  showOnHome: boolean;  // آیا این دسته در صفحه‌ی اصلی نشان داده شود
   count: string;
   sizes: string[];
   children: CatChild[];
 };
 export type FlatCat = { name: string; slug: string; parentName: string | null };
 
-type Row = { id: string; name: string; slug: string; parent_id: string | null; sort_order: number | null };
+type Row = {
+  id: string;
+  name: string;
+  slug: string;
+  parent_id: string | null;
+  sort_order: number | null;
+  color: string | null;
+  image_url: string | null;
+  show_on_home: boolean | null;
+};
 
 const staticNodes: CatNode[] = staticCategories.map((c) => ({
   name: c.name,
   slug: c.slug,
   color: c.color,
+  image: "",
+  showOnHome: true,
   count: c.count,
   sizes: c.sizes,
   children: [],
@@ -35,7 +48,7 @@ function byOrder(a: { sort_order: number | null; name: string }, b: { sort_order
   return (a.sort_order ?? 0) - (b.sort_order ?? 0) || a.name.localeCompare(b.name, "fa");
 }
 
-// ظاهر دسته (رنگ، تعداد، سایزها) از فهرست ثابت می‌آید، اگر نام همان دسته باشد
+// رنگ و عکس از تنظیمات پنل می‌آید؛ اگر خالی بود، از فهرست ثابت (با همان نام) استفاده می‌شود
 function buildFromRows(rows: Row[]) {
   const sorted = [...rows].sort(byOrder);
   const ids = new Set(rows.map((r) => r.id));
@@ -46,7 +59,9 @@ function buildFromRows(rows: Row[]) {
     return {
       name: r.name,
       slug: r.slug,
-      color: meta?.color ?? "#0A3D91",
+      color: r.color || meta?.color || "#0A3D91",
+      image: r.image_url ?? "",
+      showOnHome: r.show_on_home === true,
       count: meta?.count ?? "",
       sizes: meta?.sizes ?? [],
       children: sorted.filter((k) => k.parent_id === r.id).map((k) => ({ name: k.name, slug: k.slug })),
@@ -71,7 +86,9 @@ export function useCategories() {
     let cancelled = false;
     (async () => {
       try {
-        const { data: rows, error } = await supabase.from("categories").select("id,name,slug,parent_id,sort_order");
+        const { data: rows, error } = await supabase
+          .from("categories")
+          .select("id,name,slug,parent_id,sort_order,color,image_url,show_on_home");
         if (!cancelled && !error && rows && rows.length > 0) setData(buildFromRows(rows as Row[]));
       } catch {
         // فهرست ثابت می‌ماند

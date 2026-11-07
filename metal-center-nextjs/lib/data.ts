@@ -114,6 +114,7 @@ export interface PriceRow {
 
 export interface FactoryGroup {
   factory: string;
+  logoUrl?: string;            // لوگوی آپلودشده از پنل ادمین
   shortName: string;
   updatedAgo: string;
   totalStock: string;

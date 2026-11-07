@@ -4,10 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useState } from "react";
 import { useAuthGuard, signOut } from "@/lib/useAuthGuard";
-import ProductPriceManager from "@/components/admin/ProductPriceManager";
-import FactoryCategoryManager from "@/components/admin/FactoryCategoryManager";
-import PriceListBuilder from "@/components/admin/PriceListBuilder";
-import PriceSheet from "@/components/admin/PriceSheet";
+import ProductsHub from "@/components/admin/ProductsHub";
 import DashboardStats from "@/components/admin/DashboardStats";
 import RfqManager from "@/components/admin/RfqManager";
 import MessagesManager from "@/components/admin/MessagesManager";
@@ -15,6 +12,7 @@ import HeroManager from "@/components/admin/HeroManager";
 import SiteSettingsManager from "@/components/admin/SiteSettingsManager";
 import MenuManager from "@/components/admin/MenuManager";
 import ServicesManager from "@/components/admin/ServicesManager";
+import SitePagesManager from "@/components/admin/SitePagesManager";
 import ArticlesManager from "@/components/admin/ArticlesManager";
 import MediaLibrary from "@/components/admin/MediaLibrary";
 
@@ -22,12 +20,10 @@ const NAV = [
   { key: "dashboard", label: "نمای کلی" },
   { key: "rfqs", label: "مدیریت استعلام‌ها" },
   { key: "messages", label: "پیام‌های تماس" },
-  { key: "products", label: "محصولات و قیمت‌ها" },
-  { key: "lists", label: "لیست‌های قیمت" },
-  { key: "sheet", label: "جدول قیمت (اکسلی)" },
-  { key: "factories", label: "کارخانه‌ها و دسته‌ها" },
+  { key: "products", label: "محصولات و قیمت" },
   { key: "hero", label: "بنرهای صفحه‌ی اصلی" },
   { key: "settings", label: "تنظیمات و تماس" },
+  { key: "pages", label: "صفحات سایت و بنرها" },
   { key: "menu", label: "منوی فوتر" },
   { key: "services", label: "خدمات" },
   { key: "articles", label: "مقالات دانش" },
@@ -105,12 +101,10 @@ export default function AdminPanelPage() {
         {tab === "dashboard" && <DashboardStats />}
         {tab === "rfqs" && <RfqManager />}
         {tab === "messages" && <MessagesManager />}
-        {tab === "products" && <ProductPriceManager />}
-        {tab === "lists" && <PriceListBuilder />}
-        {tab === "sheet" && <PriceSheet />}
-        {tab === "factories" && <FactoryCategoryManager />}
+        {tab === "products" && <ProductsHub />}
         {tab === "hero" && <HeroManager />}
         {tab === "settings" && <SiteSettingsManager />}
+        {tab === "pages" && <SitePagesManager />}
         {tab === "menu" && <MenuManager />}
         {tab === "services" && <ServicesManager />}
         {tab === "articles" && <ArticlesManager />}

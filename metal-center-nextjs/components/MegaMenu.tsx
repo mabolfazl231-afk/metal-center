@@ -25,7 +25,7 @@ const SIMPLE_CONTENT: Record<string, { columns: { title: string; links: { label:
   services: {
     columns: [
       { title: "خدمات صنعتی", links: [
-        { label: "برش فولاد", href: "/services" },
+        { label: "برش ورق و مقاطع", href: "/services" },
         { label: "خم‌کاری", href: "/services" },
         { label: "گالوانیزه", href: "/services" },
       ]},
@@ -106,7 +106,7 @@ function ProductsMegaMenu() {
         >
           <div>
             <div className="mb-3 text-[11px] font-bold uppercase tracking-wide text-ink/40 dark:text-white/40">
-              {active.children.length > 0 ? "زیرمجموعه‌ها" : "سایزها"}
+              {active.children.length > 0 ? "دسته‌بندی‌ها" : "سایزها"}
             </div>
             <div className="flex flex-wrap gap-1.5">
               {(active.children.length > 0
@@ -167,7 +167,7 @@ export default function MegaMenu({ menuKey }: { menuKey: "products" | "factories
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 8 }}
       transition={{ duration: 0.18 }}
-      className="absolute inset-x-0 top-full border-t border-border-light bg-white/95 shadow-glass backdrop-blur-2xl dark:border-border-dark dark:bg-navy/95"
+      className="absolute inset-x-0 top-full border-t border-border-light bg-white shadow-glass dark:border-border-dark dark:bg-navy"
     >
       {menuKey === "products" ? (
         <ProductsMegaMenu />

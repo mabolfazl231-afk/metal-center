@@ -99,7 +99,7 @@ export function applyFilters(groups: FactoryGroup[], f: Filters): FactoryGroup[]
     .map((g) => {
       const rows = g.rows.filter((r) => {
         if (f.category !== ALL) {
-          // انتخاب دسته‌ی اصلی، همه‌ی زیرمجموعه‌هایش را هم نشان می‌دهد
+          // انتخاب دسته‌ی اصلی، همه‌ی دسته‌بندی‌هایش را هم نشان می‌دهد
           const ok = r.category
             ? r.category === f.category || r.parentCategory === f.category
             : r.name.includes(f.category);

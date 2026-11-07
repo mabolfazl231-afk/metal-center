@@ -60,7 +60,7 @@ export default async function Footer() {
               متال سنتر
             </div>
             <p className="mb-5 max-w-[280px] text-[13px] leading-8">
-              {s.site_description || "پلتفرم هوشمند قیمت‌گذاری، تأمین و خرید فولاد برای پیمانکاران و صنعتگران."}
+              {s.site_description || "پلتفرم هوشمند قیمت‌گذاری، تأمین و خرید آهن‌آلات برای پیمانکاران و صنعتگران."}
             </p>
             <div className="space-y-2 text-[12.5px]">
               {s.phones.map((p) => (
@@ -114,7 +114,7 @@ export default async function Footer() {
 
         <div className="flex flex-wrap items-center justify-between gap-2.5 border-t border-white/10 py-5 text-[12.5px] text-[#6F7F9C]">
           <span>© ۱۴۰۴ متال سنتر. تمامی حقوق محفوظ است.</span>
-          <span>ساخته‌شده برای صنعت فولاد ایران</span>
+          <span>ساخته‌شده برای صنعت آهن‌آلات ایران</span>
         </div>
       </div>
     </footer>

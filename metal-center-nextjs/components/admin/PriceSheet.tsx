@@ -118,7 +118,7 @@ export default function PriceSheet() {
   const cfg: ColCfg[] = selCat ? effectiveConfig(selCat, parentCat) : DEFAULT_CONFIG;
   const shown = cfg.filter((c) => !c.hidden);
 
-  // فیلترها جدا از هم: دسته (با زیرمجموعه‌ها)، کارخانه، نام محصول
+  // فیلترها جدا از هم: دسته (با دسته‌بندی‌ها)، کارخانه، نام محصول
   const filtered = rows.filter((p) => {
     if (sel !== "all" && !(p.category_id === sel || (p.category_id !== null && childIds.includes(p.category_id)))) return false;
     if (facFilter === "none" && p.factory_id) return false;
@@ -220,7 +220,7 @@ export default function PriceSheet() {
   function addColumn() {
     const label = newCol.trim();
     if (!label) return;
-    if (!selCat) return flash("err", "اول یک دسته یا زیرمجموعه را انتخاب کن.");
+    if (!selCat) return flash("err", "اول یک دسته یا دسته‌بندی را انتخاب کن.");
     if (cfg.some((c) => c.label === label)) return flash("err", "این ستون قبلاً وجود دارد.");
     setNewCol("");
     saveCfg([...cfg, { key: `attr:${Date.now().toString(36)}`, label }]);
@@ -377,7 +377,7 @@ export default function PriceSheet() {
             .filter((c) => !c.parent_id)
             .map((c) => (
               <optgroup key={c.id} label={c.name}>
-                <option value={c.id}>{c.name} (همه‌ی زیرمجموعه‌ها)</option>
+                <option value={c.id}>{c.name} (همه‌ی دسته‌بندی‌ها)</option>
                 {cats.filter((k) => k.parent_id === c.id).map((k) => (
                   <option key={k.id} value={k.id}>{k.name}</option>
                 ))}
@@ -416,7 +416,7 @@ export default function PriceSheet() {
       {/* تنظیم ستون‌ها */}
       <div className="mb-5 rounded-card border border-black/5 bg-white p-4">
         {!selCat ? (
-          <p className="text-xs text-ink/50">برای تغییر ستون‌ها، اول یک دسته یا زیرمجموعه را از بالا انتخاب کن.</p>
+          <p className="text-xs text-ink/50">برای تغییر ستون‌ها، اول یک دسته یا دسته‌بندی را از بالا انتخاب کن.</p>
         ) : (
           <>
             <div className="mb-3 text-xs font-extrabold text-blue">

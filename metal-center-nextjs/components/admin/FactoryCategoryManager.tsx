@@ -3,8 +3,17 @@
 import { useEffect, useState, type FormEvent, type KeyboardEvent } from "react";
 import { ArrowUp, ArrowDown, Plus, X } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import ImageUploadField from "@/components/admin/ImageUploadField";
 
-type Factory = { id: string; name: string; slug: string; location: string | null; description: string | null; verified: boolean };
+type Factory = {
+  id: string;
+  name: string;
+  slug: string;
+  location: string | null;
+  description: string | null;
+  verified: boolean;
+  logo_url: string | null;
+};
 type Category = {
   id: string;
   name: string;
@@ -12,12 +21,16 @@ type Category = {
   price_columns: string[] | null;
   parent_id: string | null;
   sort_order: number | null;
+  color: string | null;
+  image_url: string | null;
+  show_on_home: boolean | null;
 };
 type Msg = { type: "ok" | "err"; text: string } | null;
 
 const INPUT = "w-full rounded-lg border border-black/10 bg-white px-3 py-2 text-sm outline-none focus:border-blue";
 const BTN = "rounded-lg px-3 py-2 text-xs font-bold transition disabled:opacity-40";
 const ICON_BTN = "rounded-lg bg-black/5 p-1.5 transition disabled:opacity-30";
+const DEFAULT_COLOR = "#0A3D91";
 
 function makeSlug(name: string) {
   return `${name.trim().replace(/\s+/g, "-")}-${Date.now().toString(36)}`;
@@ -46,7 +59,7 @@ export default function FactoryCategoryManager() {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<Msg>(null);
 
-  const [fNew, setFNew] = useState({ name: "", location: "", description: "", verified: false });
+  const [fNew, setFNew] = useState({ name: "", location: "", description: "", verified: false, logo_url: "" });
   const [fEdit, setFEdit] = useState<Factory | null>(null);
 
   const [cNew, setCNew] = useState({ name: "", parent_id: "" });
@@ -54,17 +67,20 @@ export default function FactoryCategoryManager() {
   const [cEditName, setCEditName] = useState("");
   const [cEditParent, setCEditParent] = useState("");
   const [cEditCols, setCEditCols] = useState<string[]>([]);
+  const [cEditColor, setCEditColor] = useState(DEFAULT_COLOR);
+  const [cEditImage, setCEditImage] = useState("");
+  const [cEditHome, setCEditHome] = useState(false);
   const [colDraft, setColDraft] = useState("");
 
   function flash(type: "ok" | "err", text: string) {
     setMsg({ type, text });
   }
 
-  // دسته‌های اصلی (بدون والد) و زیرمجموعه‌ی هر کدام
+  // دسته‌های اصلی (بدون والد) و دسته‌بندی‌های زیر هر کدام
   const roots = sortCats(categories.filter((c) => !c.parent_id));
   const childrenOf = (id: string) => sortCats(categories.filter((c) => c.parent_id === id));
 
-  // خود دسته و همه‌ی زیرمجموعه‌هایش؛ اینها نمی‌توانند والد دسته‌ی ویرایشی شوند
+  // خود دسته و همه‌ی زیرشاخه‌هایش؛ اینها نمی‌توانند والد دسته‌ی ویرایشی شوند
   function subtreeIds(id: string) {
     const out = new Set<string>([id]);
     let grew = true;
@@ -87,11 +103,19 @@ export default function FactoryCategoryManager() {
 
   async function load() {
     const [f, c] = await Promise.all([
-      supabase.from("factories").select("id,name,slug,location,description,verified").order("name"),
-      supabase.from("categories").select("id,name,slug,price_columns,parent_id,sort_order").order("sort_order").order("name"),
+      supabase.from("factories").select("id,name,slug,location,description,verified,logo_url").order("name"),
+      supabase
+        .from("categories")
+        .select("id,name,slug,price_columns,parent_id,sort_order,color,image_url,show_on_home")
+        .order("sort_order")
+        .order("name"),
     ]);
     const err = f.error || c.error;
-    if (err) return flash("err", "خواندن اطلاعات ناموفق بود. اگر خطای ستون می‌بینی، فایل 0010 را در Supabase اجرا کن. (" + err.message + ")");
+    if (err)
+      return flash(
+        "err",
+        "خواندن اطلاعات ناموفق بود. اگر خطای ستون می‌بینی، فایل‌های 0010 تا 0013 را در Supabase اجرا کن. (" + err.message + ")"
+      );
     setFactories((f.data ?? []) as Factory[]);
     setCategories((c.data ?? []) as Category[]);
   }
@@ -110,10 +134,11 @@ export default function FactoryCategoryManager() {
       location: fNew.location.trim() || null,
       description: fNew.description.trim() || null,
       verified: fNew.verified,
+      logo_url: fNew.logo_url || null,
     });
     setBusy(false);
     if (error) return flash("err", "افزودن کارخانه ناموفق بود: " + error.message);
-    setFNew({ name: "", location: "", description: "", verified: false });
+    setFNew({ name: "", location: "", description: "", verified: false, logo_url: "" });
     flash("ok", "کارخانه اضافه شد.");
     load();
   }
@@ -129,6 +154,7 @@ export default function FactoryCategoryManager() {
         location: fEdit.location?.trim() || null,
         description: fEdit.description?.trim() || null,
         verified: fEdit.verified,
+        logo_url: fEdit.logo_url || null,
       })
       .eq("id", fEdit.id);
     setBusy(false);
@@ -157,11 +183,12 @@ export default function FactoryCategoryManager() {
       slug: makeSlug(cNew.name),
       parent_id: parent,
       sort_order: nextSortFor(parent),
+      show_on_home: false,
     });
     setBusy(false);
     if (error) return flash("err", "افزودن دسته ناموفق بود: " + error.message);
     setCNew({ name: "", parent_id: "" });
-    flash("ok", parent ? "زیرمجموعه اضافه شد." : "دسته اضافه شد.");
+    flash("ok", parent ? "دسته‌بندی اضافه شد." : "دسته اضافه شد.");
     load();
   }
 
@@ -170,6 +197,9 @@ export default function FactoryCategoryManager() {
     setCEditName(c.name);
     setCEditParent(c.parent_id ?? "");
     setCEditCols(c.price_columns ?? []);
+    setCEditColor(c.color || DEFAULT_COLOR);
+    setCEditImage(c.image_url ?? "");
+    setCEditHome(c.show_on_home === true);
     setColDraft("");
   }
 
@@ -179,8 +209,8 @@ export default function FactoryCategoryManager() {
     if (!name) return flash("err", "نام دسته خالی است.");
     const parent = cEditParent || null;
     if (parent && childrenOf(cEdit.id).length > 0)
-      return flash("err", "این دسته زیرمجموعه دارد، پس نمی‌تواند زیرمجموعه‌ی دسته‌ی دیگری شود.");
-    if (parent && subtreeIds(cEdit.id).has(parent)) return flash("err", "این دسته نمی‌تواند زیرمجموعه‌ی خودش باشد.");
+      return flash("err", "این دسته دسته‌بندی دارد، پس نمی‌تواند زیر دسته‌ی دیگری قرار بگیرد.");
+    if (parent && subtreeIds(cEdit.id).has(parent)) return flash("err", "این دسته نمی‌تواند زیر خودش قرار بگیرد.");
     setBusy(true);
     const { error } = await supabase
       .from("categories")
@@ -188,6 +218,10 @@ export default function FactoryCategoryManager() {
         name,
         parent_id: parent,
         price_columns: cleanColumns(cEditCols),
+        color: cEditColor || null,
+        image_url: cEditImage || null,
+        // نمایش در صفحه‌ی اصلی فقط برای دسته‌ی اصلی معنی دارد
+        show_on_home: parent ? false : cEditHome,
         // اگر به والد جدید منتقل شد، ترتیبش در بین خواهرهای جدید ته‌ی صف می‌رود
         ...(parent !== (cEdit.parent_id ?? null) ? { sort_order: nextSortFor(parent) } : {}),
       })
@@ -202,11 +236,11 @@ export default function FactoryCategoryManager() {
   async function deleteCategory(c: Category) {
     const kids = childrenOf(c.id).length;
     const question = kids
-      ? `دسته‌ی «${c.name}» و ${kids.toLocaleString("fa-IR")} زیرمجموعه‌اش حذف شوند؟`
+      ? `دسته‌ی «${c.name}» و ${kids.toLocaleString("fa-IR")} دسته‌بندی زیرش حذف شوند؟`
       : `دسته‌ی «${c.name}» حذف شود؟`;
     if (!window.confirm(question)) return;
     const { error } = await supabase.from("categories").delete().eq("id", c.id);
-    if (error) return flash("err", "حذف نشد. احتمالاً محصولاتی در این دسته یا زیرمجموعه‌هایش هستند. (" + error.message + ")");
+    if (error) return flash("err", "حذف نشد. احتمالاً محصولاتی در این دسته یا دسته‌بندی‌هایش هستند. (" + error.message + ")");
     flash("ok", "دسته حذف شد.");
     load();
   }
@@ -267,7 +301,7 @@ export default function FactoryCategoryManager() {
           <label className="text-xs font-bold text-ink/60">نام دسته</label>
           <input className={INPUT} value={cEditName} onChange={(e) => setCEditName(e.target.value)} />
 
-          <label className="text-xs font-bold text-ink/60">والد (دسته‌ی اصلی)</label>
+          <label className="text-xs font-bold text-ink/60">قرار گرفتن زیر (دسته‌ی اصلی)</label>
           <select
             className={INPUT}
             value={cEditParent}
@@ -277,17 +311,38 @@ export default function FactoryCategoryManager() {
             <option value="">دسته‌ی اصلی (بدون والد)</option>
             {parentOptions.map((r) => (
               <option key={r.id} value={r.id}>
-                زیرمجموعه‌ی «{r.name}»
+                زیر دسته‌ی «{r.name}»
               </option>
             ))}
           </select>
-          {kids > 0 && <p className="text-[11px] text-ink/45">این دسته زیرمجموعه دارد، پس والدش قفل است.</p>}
+          {kids > 0 && <p className="text-[11px] text-ink/45">این دسته دسته‌بندی دارد، پس والدش قفل است.</p>}
+
+          <div className="grid gap-3 rounded-xl bg-steel p-3">
+            <div className="text-xs font-extrabold text-blue">ظاهر دسته در سایت</div>
+            <div className="flex items-center gap-3">
+              <label className="text-xs font-bold text-ink/60">رنگ کاشی</label>
+              <input
+                type="color"
+                value={cEditColor}
+                onChange={(e) => setCEditColor(e.target.value)}
+                className="h-9 w-14 cursor-pointer rounded-lg border border-black/10 bg-white p-1"
+              />
+              <span dir="ltr" className="text-[11px] text-ink/50">{cEditColor}</span>
+            </div>
+            <ImageUploadField label="عکس دسته (بدون پس‌زمینه بهتر است)" value={cEditImage} onChange={setCEditImage} />
+            {!isChild && (
+              <label className="flex items-center gap-2 text-xs font-bold">
+                <input type="checkbox" checked={cEditHome} onChange={(e) => setCEditHome(e.target.checked)} className="accent-blue" />
+                نمایش در صفحه‌ی اصلی سایت
+              </label>
+            )}
+          </div>
 
           <div className="grid gap-2 rounded-xl bg-steel p-3">
             <div className="text-xs font-extrabold text-blue">ستون‌های قیمت (به همین ترتیب در جدول سایت دیده می‌شوند)</div>
             <p className="text-[11px] text-ink/50">
               برای ورق مثلاً: ابعاد، ضخامت، عرض، طول.
-              {isChild && " اگر این زیرمجموعه ستون ندارد، ستون‌های دسته‌ی اصلی استفاده می‌شود."}
+              {isChild && " اگر این دسته‌بندی ستون ندارد، ستون‌های دسته‌ی اصلی استفاده می‌شود."}
             </p>
 
             {cEditCols.length === 0 ? (
@@ -349,13 +404,17 @@ export default function FactoryCategoryManager() {
     const index = siblings.findIndex((x) => x.id === c.id);
     return (
       <div key={c.id} className="flex items-center justify-between gap-2 rounded-xl border border-black/5 p-3">
-        <div className="min-w-0">
-          <div className="text-sm font-bold">
-            {c.name}
-            {isChild && <span className="text-[11px] font-normal text-ink/40"> · زیرمجموعه</span>}
-          </div>
-          <div className="mt-1 text-[11px] text-ink/40">
-            {c.price_columns && c.price_columns.length > 0 ? `ستون‌ها: ${c.price_columns.join("، ")}` : "ستون اختصاصی ندارد"}
+        <div className="flex min-w-0 items-center gap-3">
+          <span className="h-8 w-8 flex-shrink-0 rounded-lg border border-black/5" style={{ background: c.color || DEFAULT_COLOR }} />
+          <div className="min-w-0">
+            <div className="text-sm font-bold">
+              {c.name}
+              {isChild && <span className="text-[11px] font-normal text-ink/40"> · دسته‌بندی</span>}
+              {!isChild && c.show_on_home && <span className="text-[11px] font-normal text-success"> · در صفحه‌ی اصلی</span>}
+            </div>
+            <div className="mt-1 text-[11px] text-ink/40">
+              {c.price_columns && c.price_columns.length > 0 ? `ستون‌ها: ${c.price_columns.join("، ")}` : "ستون اختصاصی ندارد"}
+            </div>
           </div>
         </div>
         <div className="flex flex-shrink-0 gap-1.5">
@@ -374,8 +433,8 @@ export default function FactoryCategoryManager() {
 
   return (
     <div>
-      <h1 className="mb-1 text-xl font-extrabold">کارخانه‌ها و دسته‌ها</h1>
-      <p className="mb-5 text-sm text-ink/50">کارخانه‌ها، دسته‌ها و زیرمجموعه‌ها را همین‌جا اضافه، ویرایش یا حذف کن.</p>
+      <h1 className="mb-1 text-xl font-extrabold">کارخانه‌ها و دسته‌بندی‌ها</h1>
+      <p className="mb-5 text-sm text-ink/50">کارخانه‌ها با لوگو، و دسته‌ها با رنگ و عکس را همین‌جا اضافه یا ویرایش کن.</p>
 
       {msg && (
         <div className={`mb-5 rounded-xl px-4 py-3 text-sm font-semibold ${msg.type === "ok" ? "bg-success/10 text-success" : "bg-danger/10 text-danger"}`}>
@@ -391,6 +450,7 @@ export default function FactoryCategoryManager() {
             <input className={INPUT} placeholder="نام کارخانه" value={fNew.name} onChange={(e) => setFNew({ ...fNew, name: e.target.value })} required />
             <input className={INPUT} placeholder="محل (مثلاً اصفهان)" value={fNew.location} onChange={(e) => setFNew({ ...fNew, location: e.target.value })} />
             <input className={INPUT} placeholder="توضیح کوتاه" value={fNew.description} onChange={(e) => setFNew({ ...fNew, description: e.target.value })} />
+            <ImageUploadField label="لوگوی کارخانه" value={fNew.logo_url} onChange={(url) => setFNew({ ...fNew, logo_url: url })} />
             <label className="flex items-center gap-2 text-xs font-bold">
               <input type="checkbox" checked={fNew.verified} onChange={(e) => setFNew({ ...fNew, verified: e.target.checked })} className="accent-blue" />
               کارخانه‌ی تأییدشده
@@ -405,6 +465,7 @@ export default function FactoryCategoryManager() {
                   <input className={INPUT} value={fEdit.name} onChange={(e) => setFEdit({ ...fEdit, name: e.target.value })} />
                   <input className={INPUT} placeholder="محل" value={fEdit.location ?? ""} onChange={(e) => setFEdit({ ...fEdit, location: e.target.value })} />
                   <input className={INPUT} placeholder="توضیح" value={fEdit.description ?? ""} onChange={(e) => setFEdit({ ...fEdit, description: e.target.value })} />
+                  <ImageUploadField label="لوگوی کارخانه" value={fEdit.logo_url ?? ""} onChange={(url) => setFEdit({ ...fEdit, logo_url: url })} />
                   <label className="flex items-center gap-2 text-xs font-bold">
                     <input type="checkbox" checked={fEdit.verified} onChange={(e) => setFEdit({ ...fEdit, verified: e.target.checked })} className="accent-blue" />
                     تأییدشده
@@ -416,13 +477,23 @@ export default function FactoryCategoryManager() {
                 </div>
               ) : (
                 <div key={f.id} className="flex items-center justify-between gap-2 rounded-xl border border-black/5 p-3">
-                  <div>
-                    <div className="text-sm font-bold">
-                      {f.name} {f.verified && <span className="text-[11px] text-success">✔ تأییدشده</span>}
+                  <div className="flex min-w-0 items-center gap-3">
+                    <div className="flex h-10 w-14 flex-shrink-0 items-center justify-center overflow-hidden rounded-lg border border-black/5 bg-white p-1">
+                      {f.logo_url ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={f.logo_url} alt="" className="max-h-full max-w-full object-contain" />
+                      ) : (
+                        <span className="text-[10px] text-ink/30">بی‌لوگو</span>
+                      )}
                     </div>
-                    <div className="text-[11px] text-ink/40">{f.location ?? "محل ثبت نشده"}</div>
+                    <div className="min-w-0">
+                      <div className="text-sm font-bold">
+                        {f.name} {f.verified && <span className="text-[11px] text-success">✔ تأییدشده</span>}
+                      </div>
+                      <div className="text-[11px] text-ink/40">{f.location ?? "محل ثبت نشده"}</div>
+                    </div>
                   </div>
-                  <div className="flex gap-1.5">
+                  <div className="flex flex-shrink-0 gap-1.5">
                     <button onClick={() => setFEdit(f)} className={`${BTN} bg-black/5`}>ویرایش</button>
                     <button onClick={() => deleteFactory(f)} className={`${BTN} bg-danger/10 text-danger`}>حذف</button>
                   </div>
@@ -432,18 +503,18 @@ export default function FactoryCategoryManager() {
           </div>
         </section>
 
-        {/* دسته‌ها و زیرمجموعه‌ها */}
+        {/* دسته‌ها و دسته‌بندی‌ها */}
         <section className="rounded-card border border-black/5 bg-white p-5">
           <h2 className="mb-1 text-sm font-extrabold">دسته‌ها ({categories.length})</h2>
           <p className="mb-4 text-[11px] text-ink/45">
-            هر دسته‌ی اصلی می‌تواند زیرمجموعه داشته باشد، مثلاً میلگرد ← ساده و آجدار. هر زیرمجموعه ستون‌های قیمت جدا دارد.
+            هر دسته‌ی اصلی می‌تواند دسته‌بندی داشته باشد، مثلاً میلگرد ← ساده و آجدار. دسته‌های اصلی با «نمایش در صفحه‌ی اصلی» روی خانه می‌آیند؛ بقیه فقط در منو و صفحه‌ی محصولات.
           </p>
 
           <form onSubmit={addCategory} className="mb-5 grid gap-2 rounded-xl bg-steel p-3">
             <div className="flex gap-2">
               <input
                 className={INPUT}
-                placeholder="نام دسته یا زیرمجموعه"
+                placeholder="نام دسته یا دسته‌بندی"
                 value={cNew.name}
                 onChange={(e) => setCNew({ ...cNew, name: e.target.value })}
                 required
@@ -454,7 +525,7 @@ export default function FactoryCategoryManager() {
               <option value="">دسته‌ی اصلی (بدون والد)</option>
               {roots.map((r) => (
                 <option key={r.id} value={r.id}>
-                  زیرمجموعه‌ی «{r.name}»
+                  زیر دسته‌ی «{r.name}»
                 </option>
               ))}
             </select>

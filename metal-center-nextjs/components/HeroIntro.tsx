@@ -80,7 +80,7 @@ function IntroScene() {
         animate={{ opacity: 1 }}
         transition={{ duration: 0.6, delay: 2.2 }}
       >
-        پلتفرم هوشمند فولاد
+        پلتفرم هوشمند آهن‌آلات
       </motion.text>
     </svg>
   );

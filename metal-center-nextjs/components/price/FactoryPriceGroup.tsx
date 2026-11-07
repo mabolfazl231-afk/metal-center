@@ -99,12 +99,12 @@ function MetaChips({ row }: { row: PriceRow }) {
   );
 }
 
-function FactoryAvatar({ name }: { name: string }) {
+function FactoryAvatar({ name, logoUrl }: { name: string; logoUrl?: string }) {
   const slug = factories.find((f) => norm(f.name) === norm(name))?.slug ?? "";
   return (
     <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-blue to-navy p-1 shadow-lifted">
       <div className="flex h-full w-full items-center justify-center overflow-hidden rounded-xl bg-white p-1.5">
-        <FactoryLogo slug={slug} name={name} fallbackClassName="text-lg font-extrabold text-blue" />
+        <FactoryLogo slug={slug} name={name} url={logoUrl} fallbackClassName="text-lg font-extrabold text-blue" />
       </div>
     </div>
   );
@@ -132,7 +132,7 @@ export default function FactoryPriceGroup({
     <div className="mb-5 overflow-hidden rounded-card border border-border-light bg-white shadow-soft dark:border-border-dark dark:bg-surface-dark">
       {/* سربرگ کارخانه */}
       <button onClick={() => setOpen((o) => !o)} aria-expanded={open} className="flex w-full items-center gap-3 p-3.5 text-start sm:p-4">
-        <FactoryAvatar name={group.factory} />
+        <FactoryAvatar name={group.factory} logoUrl={group.logoUrl} />
         <div className="min-w-0 flex-1">
           <div className="truncate text-[15px] font-extrabold sm:text-base">{group.factory}</div>
           <div className="mt-0.5 flex flex-wrap items-center gap-x-2 text-[11.5px] text-ink/50 dark:text-white/40">

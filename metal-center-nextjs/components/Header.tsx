@@ -98,7 +98,7 @@ export default function Header() {
     <>
     <header
       onMouseLeave={() => setOpenMega(null)}
-      className={`sticky top-0 z-50 border-b border-border-light/70 bg-white/80 backdrop-blur-xl transition-all duration-300 dark:border-border-dark/70 dark:bg-navy/80 ${
+      className={`sticky top-0 z-50 border-b border-border-light/70 bg-white/95 transition-all duration-300 dark:border-border-dark/70 dark:bg-navy/95 ${
         scrolled ? "shadow-glass" : ""
       }`}
     >

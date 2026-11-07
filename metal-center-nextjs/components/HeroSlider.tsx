@@ -33,7 +33,7 @@ const DEFAULT_SLIDES: Slide[] = [
     eyebrow: "قیمت‌ها هر ۱۵ دقیقه به‌روزرسانی می‌شوند",
     title: (
       <>
-        فولاد را <span className="text-[#7FB2FF]">هوشمندانه</span> بخرید، بفروشید و مدیریت کنید
+        آهن‌آلات را <span className="text-[#7FB2FF]">هوشمندانه</span> بخرید، بفروشید و مدیریت کنید
       </>
     ),
     desc: "قیمت لحظه‌ای، استعلام آنی با آپلود فایل، و شبکه‌ای معتبر از کارخانه‌ها — همه در یک پلتفرم.",
@@ -44,7 +44,7 @@ const DEFAULT_SLIDES: Slide[] = [
     key: "default-2",
     image: "/banners/hero-2.jpg",
     gradient: GRADIENTS[1],
-    eyebrow: "✦ جدید — دستیار هوشمند فولاد",
+    eyebrow: "✦ جدید — دستیار هوشمند آهن‌آلات",
     title: (
       <>
         از <span className="text-[#7FB2FF]">Metal AI</span> برای انتخاب محصول کمک بگیرید
@@ -160,8 +160,8 @@ export default function HeroSlider() {
         <motion.div
           className="absolute left-1/2 top-1/2 h-0 w-0"
           style={{ transformStyle: "preserve-3d" }}
-          animate={{ rotateX: [14, 6, 14], rotateY: [-26, -14, -26] }}
-          transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
+          animate={{ rotateX: 10, rotateY: -20 }}
+          transition={{ duration: 0.6 }}
         >
           {PANELS.map((p) => (
             <div

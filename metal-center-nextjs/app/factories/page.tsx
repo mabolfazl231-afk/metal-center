@@ -1,14 +1,19 @@
 import { factories } from "@/lib/data";
+import { fetchPage } from "@/lib/cms";
+import PageBanner from "@/components/PageBanner";
 
-export const metadata = { title: "کارخانه‌های تأییدشده", description: "شبکه‌ای از کارخانه‌های معتبر فولاد در سراسر ایران." };
+export const metadata = { title: "کارخانه‌های تأییدشده", description: "شبکه‌ای از کارخانه‌های معتبر آهن‌آلات در سراسر ایران." };
+export const revalidate = 60;
 
-export default function FactoriesPage() {
+export default async function FactoriesPage() {
+  const page = await fetchPage("factories");
   return (
     <div className="mx-auto max-w-[1240px] px-6 py-10">
-      <h1 className="mb-2 text-[28px] font-extrabold">کارخانه‌های تأییدشده</h1>
-      <p className="mb-8 max-w-[560px] text-[14.5px] text-ink/50 dark:text-white/40">
-        شبکه‌ای از تولیدکنندگان معتبر فولاد با گواهی استاندارد و سابقه تأمین.
-      </p>
+      <PageBanner
+        page={page}
+        fallbackTitle="کارخانه‌های تأییدشده"
+        fallbackSubtitle="شبکه‌ای از تولیدکنندگان معتبر آهن‌آلات با گواهی استاندارد و سابقه تأمین."
+      />
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
         {factories.map((f) => (
           <div key={f.name} className="overflow-hidden rounded-card border border-border-light bg-white dark:border-border-dark dark:bg-surface-dark shadow-soft">

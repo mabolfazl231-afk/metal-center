@@ -1,29 +1,32 @@
+import { fetchPage } from "@/lib/cms";
+import PageBanner from "@/components/PageBanner";
+
 export const metadata = { title: "درباره ما", description: "درباره مأموریت، چشم‌انداز و ارزش‌های متال سنتر." };
+export const revalidate = 60;
 
 const values = ["اعتماد", "دقت", "شفافیت", "نوآوری", "موفقیت مشتری"];
 
-export default function AboutPage() {
+export default async function AboutPage() {
+  const page = await fetchPage("about");
   return (
     <div className="mx-auto max-w-[1240px] px-6 py-10">
-      <div className="mx-auto mb-10 max-w-[640px] text-center">
-        <h1 className="mb-3 text-[29px] font-extrabold">درباره متال سنتر</h1>
-        <p className="text-[14.5px] leading-8 text-ink/50 dark:text-white/40">
-          متال سنتر با هدف ساده‌سازی فرآیند خرید فولاد برای پیمانکاران، تولیدکنندگان و بازرگانان ایرانی
-          راه‌اندازی شده — با تکیه بر شفافیت قیمت، سرعت پاسخ‌گویی و شبکه‌ای از کارخانه‌های معتبر.
-        </p>
-      </div>
+      <PageBanner
+        page={page}
+        fallbackTitle="درباره متال سنتر"
+        fallbackSubtitle="متال سنتر با هدف ساده‌سازی فرآیند خرید آهن‌آلات برای پیمانکاران، تولیدکنندگان و بازرگانان ایرانی راه‌اندازی شده — با تکیه بر شفافیت قیمت، سرعت پاسخ‌گویی و شبکه‌ای از کارخانه‌های معتبر."
+      />
 
       <div className="mb-10 grid grid-cols-1 gap-5 sm:grid-cols-2">
         <div className="rounded-card border border-border-light bg-white dark:border-border-dark dark:bg-surface-dark p-7">
           <h3 className="mb-2.5 font-bold">مأموریت ما</h3>
           <p className="text-[13.5px] leading-8 text-ink/50 dark:text-white/40">
-            ارائه اطلاعات قیمتی دقیق، خدمات تأمین و ابزارهای خرید هوشمند برای خریداران فولاد در سراسر ایران.
+            ارائه اطلاعات قیمتی دقیق، خدمات تأمین و ابزارهای خرید هوشمند برای خریداران آهن‌آلات در سراسر ایران.
           </p>
         </div>
         <div className="rounded-card border border-border-light bg-white dark:border-border-dark dark:bg-surface-dark p-7">
           <h3 className="mb-2.5 font-bold">چشم‌انداز ما</h3>
           <p className="text-[13.5px] leading-8 text-ink/50 dark:text-white/40">
-            تبدیل‌شدن به پیشروترین پلتفرم هوشمند فولاد و صنایع فلزی در منطقه.
+            تبدیل‌شدن به پیشروترین پلتفرم هوشمند آهن‌آلات و صنایع فلزی در منطقه.
           </p>
         </div>
       </div>

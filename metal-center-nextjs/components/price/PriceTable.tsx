@@ -55,7 +55,7 @@ export default function PriceTable({ rows }: { rows: PriceRow[] }) {
   async function share() {
     const text = filtered.slice(0, 5).map((r) => `${r.name}: ${r.price.toLocaleString("fa-IR")} تومان`).join("\n");
     if (navigator.share) {
-      navigator.share({ title: "قیمت روز فولاد - متال سنتر", text }).catch(() => {});
+      navigator.share({ title: "قیمت روز آهن‌آلات - متال سنتر", text }).catch(() => {});
     } else {
       navigator.clipboard.writeText(text);
     }

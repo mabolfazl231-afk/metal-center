@@ -33,7 +33,7 @@ export default function BottomNav() {
           className="fixed inset-x-3 bottom-3 z-[70] lg:hidden"
         >
           <div
-            className="relative flex h-[72px] items-center justify-around rounded-[28px] border border-white/40 bg-white/70 px-3 shadow-[0_8px_32px_rgba(7,27,52,0.18)] backdrop-blur-xl dark:border-white/10 dark:bg-navy/70"
+            className="relative flex h-[72px] items-center justify-around rounded-[28px] border border-white/40 bg-white/95 px-3 shadow-[0_8px_32px_rgba(7,27,52,0.18)] dark:border-white/10 dark:bg-navy/95"
             style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
           >
             <NavLink href="/" label="خانه" icon={Home} active={pathname === "/"} />

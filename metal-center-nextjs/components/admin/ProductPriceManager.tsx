@@ -22,7 +22,7 @@ type Row = {
   daily_prices: { price: number | string; recorded_at: string }[] | null;
 };
 
-// label: «والد › زیرمجموعه» برای زیرمجموعه‌ها، و نام ساده برای دسته‌ی اصلی
+// label: «والد › دسته‌بندی» برای دسته‌بندی‌ها، و نام ساده برای دسته‌ی اصلی
 type CatOption = Option & { price_columns: string[] | null; parent_id: string | null; label: string };
 
 type Msg = { type: "ok" | "err"; text: string } | null;

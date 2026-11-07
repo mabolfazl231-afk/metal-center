@@ -1,11 +1,12 @@
 import { articles as fallbackArticles } from "@/lib/data";
-import { fetchArticles, toFa } from "@/lib/cms";
+import { fetchArticles, fetchPage, toFa } from "@/lib/cms";
+import PageBanner from "@/components/PageBanner";
 
-export const metadata = { title: "مرکز دانش فولاد", description: "راهنمای خرید، تحلیل بازار و استانداردهای صنعت فولاد." };
+export const metadata = { title: "مرکز دانش آهن‌آلات", description: "راهنمای خرید، تحلیل بازار و استانداردهای صنعت آهن‌آلات." };
 export const revalidate = 60;
 
 export default async function KnowledgePage() {
-  const db = await fetchArticles();
+  const [db, page] = await Promise.all([fetchArticles(), fetchPage("knowledge")]);
   // هر مقاله به یک شکل یکسان تبدیل می‌شود تا نمایش یکی باشد
   const list = db
     ? db.map((a) => ({ id: a.id, title: a.title, tag: a.tag, time: `${toFa(a.read_minutes)} دقیقه`, excerpt: a.excerpt, body: a.body, cover: a.cover_url }))
@@ -13,12 +14,11 @@ export default async function KnowledgePage() {
 
   return (
     <div className="mx-auto max-w-[1240px] px-6 py-10">
-      <div className="mb-10 text-center">
-        <h1 className="mb-2 text-[28px] font-extrabold">مرکز دانش فولاد</h1>
-        <p className="mx-auto max-w-[520px] text-[14.5px] text-ink/50 dark:text-white/40">
-          راهنمای خرید، تحلیل بازار، استانداردها و مقایسه محصولات.
-        </p>
-      </div>
+      <PageBanner
+        page={page}
+        fallbackTitle="مرکز دانش آهن‌آلات"
+        fallbackSubtitle="راهنمای خرید، تحلیل بازار، استانداردها و مقایسه محصولات."
+      />
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
         {list.map((a) => (
           <article key={a.id} className="overflow-hidden rounded-card border border-border-light bg-white shadow-soft dark:border-border-dark dark:bg-surface-dark">

@@ -49,7 +49,7 @@ export default function HomePage() {
             <div className="mb-8 flex items-end justify-between">
               <div>
                 <span className="mb-2 block text-[12.5px] font-bold text-blue">محصولات</span>
-                <h2 className="text-[26px] font-extrabold">دسته‌بندی محصولات فولادی</h2>
+                <h2 className="text-[26px] font-extrabold">دسته‌بندی محصولات آهن‌آلات</h2>
               </div>
               <Link href="/products" className="text-[14px] font-semibold text-blue">
                 مشاهده همه محصولات ←

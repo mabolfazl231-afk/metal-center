@@ -13,7 +13,7 @@ const STARTERS = [
 
 export default function AssistantPage() {
   const [messages, setMessages] = useState<Msg[]>([
-    { role: "assistant", text: "سلام! من دستیار خرید فولاد متال سنتر هستم. درباره‌ی سایز، استاندارد یا نوع محصول موردنیازتان بپرسید." },
+    { role: "assistant", text: "سلام! من دستیار خرید آهن‌آلات متال سنتر هستم. درباره‌ی سایز، استاندارد یا نوع محصول موردنیازتان بپرسید." },
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -48,7 +48,7 @@ export default function AssistantPage() {
   return (
     <div className="mx-auto flex min-h-[80vh] max-w-2xl flex-col px-4 py-8">
       <div className="mb-4 text-center">
-        <h1 className="mb-1 text-xl font-extrabold">✦ دستیار هوشمند خرید فولاد</h1>
+        <h1 className="mb-1 text-xl font-extrabold">✦ دستیار هوشمند خرید آهن‌آلات</h1>
         <p className="text-sm text-ink/50">سوال بپرسید، راهنمایی بگیرید، بعد از صفحه استعلام قیمت ثبت کنید.</p>
       </div>
 

@@ -1,12 +1,19 @@
 import CategoryGrid from "@/components/CategoryGrid";
+import PageBanner from "@/components/PageBanner";
+import { fetchPage } from "@/lib/cms";
 
-export const metadata = { title: "محصولات فولادی", description: "میلگرد، تیرآهن، ورق، پروفیل، نبشی و ناودانی با لیست قیمت و مشخصات کامل." };
+export const metadata = { title: "محصولات آهن‌آلات", description: "میلگرد، تیرآهن، ورق، پروفیل، نبشی و ناودانی با لیست قیمت و مشخصات کامل." };
+export const revalidate = 60;
 
-export default function ProductsPage() {
+export default async function ProductsPage() {
+  const page = await fetchPage("products");
   return (
     <div className="mx-auto max-w-[1240px] px-6 py-12">
-      <h1 className="mb-2 text-[30px] font-extrabold">محصولات فولادی</h1>
-      <p className="mb-10 text-[15px] text-ink/60">یک دسته را انتخاب کن تا لیست قیمت و سایزها را ببینی.</p>
+      <PageBanner
+        page={page}
+        fallbackTitle="محصولات آهن‌آلات"
+        fallbackSubtitle="یک دسته را انتخاب کن تا لیست قیمت و سایزها را ببینی."
+      />
       <CategoryGrid variant="products" />
     </div>
   );

@@ -25,7 +25,7 @@ type DbProduct = {
   price_unit: string | null;
   attributes: Record<string, unknown> | null;
   categories: (CatSrc & { parent: CatSrc | null }) | null;
-  factories: { name: string; slug: string } | null;
+  factories: { name: string; slug: string; logo_url: string | null } | null;
   daily_prices: DbPrice[] | null;
 };
 
@@ -75,7 +75,7 @@ export async function fetchPriceGroups(): Promise<FactoryGroup[]> {
   const { data, error } = await supabase
     .from("products")
     .select(
-      "id,name,size,weight_kg,in_stock,call_for_price,grade,loading_place,price_unit,attributes,categories(name,slug,price_columns,hidden_fields,table_config,parent:categories!parent_id(name,slug,price_columns,hidden_fields,table_config)),factories(name,slug),daily_prices(price,change_percent,recorded_at)"
+      "id,name,size,weight_kg,in_stock,call_for_price,grade,loading_place,price_unit,attributes,categories(name,slug,price_columns,hidden_fields,table_config,parent:categories!parent_id(name,slug,price_columns,hidden_fields,table_config)),factories(name,slug,logo_url),daily_prices(price,change_percent,recorded_at)"
     )
     .eq("visible", true)
     .order("name", { ascending: true })
@@ -91,6 +91,7 @@ export async function fetchPriceGroups(): Promise<FactoryGroup[]> {
     if (!g) {
       g = {
         factory: factoryName,
+        logoUrl: p.factories?.logo_url ?? undefined,
         shortName: shortNameOf(factoryName),
         updatedAgo: "—",
         totalStock: "—",
@@ -128,7 +129,8 @@ export async function fetchPriceGroups(): Promise<FactoryGroup[]> {
       stock: p.in_stock === false ? "ناموجود" : price ? "موجود" : "نامشخص",
       attrs: attrsOf(p),
       columns: columnsOf(p),
-      history: [...prices].reverse().slice(-500).map((x) => ({ price: Number(x.price), at: x.recorded_at })),
+      // فقط ۹۰ نقطه‌ی آخر برای نمودار؛ داده‌ی کمتر یعنی صفحه‌ی سریع‌تر
+      history: [...prices].reverse().slice(-90).map((x) => ({ price: Number(x.price), at: x.recorded_at })),
       spark: prices.length > 1 ? prices.slice(0, 12).reverse().map((x) => Number(x.price)) : [],
     };
     g.rows.push(row);

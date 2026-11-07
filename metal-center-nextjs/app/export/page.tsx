@@ -1,16 +1,19 @@
 import { incoterms } from "@/lib/data";
+import { fetchPage } from "@/lib/cms";
+import PageBanner from "@/components/PageBanner";
 
-export const metadata = { title: "صادرات فولاد", description: "صادرات فولاد با اینکوترمز استاندارد و مستندسازی کامل گمرکی." };
+export const metadata = { title: "صادرات آهن‌آلات", description: "صادرات آهن‌آلات با اینکوترمز استاندارد و مستندسازی کامل گمرکی." };
+export const revalidate = 60;
 
-export default function ExportPage() {
+export default async function ExportPage() {
+  const page = await fetchPage("export");
   return (
     <div className="mx-auto max-w-[1240px] px-6 py-10">
-      <div className="mb-10 rounded-card bg-navy p-10 text-center text-white">
-        <h1 className="mb-3 text-2xl font-extrabold">پلتفرم صادرات فولاد متال سنتر</h1>
-        <p className="mx-auto max-w-[560px] text-sm text-[#B9C6DC]">
-          از مستندسازی گمرکی تا حمل بین‌المللی — تیم صادرات ما فرآیند خرید و ارسال فولاد به خارج از کشور را ساده می‌کند.
-        </p>
-      </div>
+      <PageBanner
+        page={page}
+        fallbackTitle="پلتفرم صادرات آهن‌آلات متال سنتر"
+        fallbackSubtitle="از مستندسازی گمرکی تا حمل بین‌المللی — تیم صادرات ما فرآیند خرید و ارسال آهن‌آلات به خارج از کشور را ساده می‌کند."
+      />
 
       <h2 className="mb-5 text-lg font-extrabold">اینکوترمز پشتیبانی‌شده</h2>
       <div className="grid grid-cols-2 gap-3.5 lg:grid-cols-4">

@@ -52,7 +52,7 @@ export default function PricesPage() {
   const [selected, setSelected] = useState<string[]>([]);
   const [compareOpen, setCompareOpen] = useState(false);
   const [copied, setCopied] = useState(false);
-  // همه‌ی دسته‌ها و زیرمجموعه‌ها (از دیتابیس، یا فهرست ثابت اگر دیتابیس خالی بود)
+  // همه‌ی دسته‌ها و دسته‌بندی‌ها (از دیتابیس، یا فهرست ثابت اگر دیتابیس خالی بود)
   const { flat: categories } = useCategories();
 
   // داده از Supabase؛ هر ۶۰ ثانیه تازه می‌شود. اگر دیتابیس خالی یا خطادار باشد، داده‌ی نمونه با برچسب مشخص نشان داده می‌شود
@@ -76,7 +76,10 @@ export default function PricesPage() {
           setSource("sample");
         });
     load();
-    const timer = setInterval(load, 60000);
+    // هر ۵ دقیقه، و فقط وقتی صفحه باز و دیده‌شدنی است
+    const timer = setInterval(() => {
+      if (!document.hidden) load();
+    }, 300000);
     return () => {
       cancelled = true;
       clearInterval(timer);
@@ -153,14 +156,14 @@ export default function PricesPage() {
       <div className="print-letterhead">
         <Image src="/logo.png" alt="متال سنتر" width={130} height={46} className="h-10 w-auto object-contain" />
         <div className="text-end text-xs text-ink/60">
-          <div className="font-bold">گزارش لیست قیمت فولاد</div>
+          <div className="font-bold">گزارش لیست قیمت آهن‌آلات</div>
           <div>تاریخ چاپ: {new Date().toLocaleDateString("fa-IR")}</div>
         </div>
       </div>
 
       <header className="mb-5 flex flex-col gap-3 sm:mb-6 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-[24px] font-extrabold leading-tight sm:text-[30px]">لیست قیمت فولاد</h1>
+          <h1 className="text-[24px] font-extrabold leading-tight sm:text-[30px]">لیست قیمت آهن‌آلات</h1>
           <p className="mt-1.5 text-[13.5px] text-ink/50 dark:text-white/40">قیمت لحظه‌ای به تفکیک کارخانه</p>
         </div>
         <span className="inline-flex w-fit items-center gap-2.5 rounded-full border border-success/25 bg-white px-3.5 py-2 text-xs font-bold text-success shadow-soft dark:bg-surface-dark">
@@ -178,25 +181,55 @@ export default function PricesPage() {
         </div>
       )}
 
-      {/* دسته‌بندی‌ها — روی گوشی با اسکرول افقی */}
-      <div className="-mx-4 mb-4 flex gap-2 overflow-x-auto px-4 pb-2 [scrollbar-width:none] sm:mx-0 sm:px-0">
-        {[ALL, ...categories.map((c) => c.name)].map((name) => {
+      {/* دسته‌های اصلی — روی گوشی با اسکرول افقی */}
+      {(() => {
+        const roots = categories.filter((c) => !c.parentName);
+        const activeRoot =
+          roots.find((r) => r.name === filters.category || categories.some((c) => c.parentName === r.name && c.name === filters.category)) ?? null;
+        const subs = activeRoot ? categories.filter((c) => c.parentName === activeRoot.name) : [];
+        const pill = (name: string, label: string, sub: boolean) => {
           const active = filters.category === name;
           return (
             <button
-              key={name}
+              key={name + (sub ? "-sub" : "")}
               onClick={() => pickCategory(name)}
-              className={`shrink-0 rounded-pill border px-4 py-2 text-[12.5px] font-bold transition-all active:scale-95 ${
+              className={`shrink-0 rounded-pill border font-bold transition-all active:scale-95 ${
+                sub ? "px-3.5 py-1.5 text-[12px]" : "px-4 py-2 text-[12.5px]"
+              } ${
                 active
                   ? "border-blue bg-blue text-white shadow-glow"
-                  : "border-border-light bg-white text-ink/60 dark:border-border-dark dark:bg-surface-dark dark:text-white/60"
+                  : sub
+                    ? "border-blue/30 bg-blue/5 text-blue dark:bg-white/5"
+                    : "border-border-light bg-white text-ink/60 dark:border-border-dark dark:bg-surface-dark dark:text-white/60"
               }`}
             >
-              {name === ALL ? "همه محصولات" : name}
+              {label}
             </button>
           );
-        })}
-      </div>
+        };
+        return (
+          <>
+            <div className="-mx-4 mb-3 flex gap-2 overflow-x-auto px-4 pb-2 [scrollbar-width:none] sm:mx-0 sm:px-0">
+              {pill(ALL, "همه محصولات", false)}
+              {roots.map((r) => pill(r.name, r.name, false))}
+            </div>
+            {subs.length > 0 && (
+              <div className="-mx-4 mb-4 flex items-center gap-2 overflow-x-auto px-4 pb-2 [scrollbar-width:none] sm:mx-0 sm:px-0">
+                <span className="shrink-0 text-[11px] font-bold text-ink/40">{activeRoot!.name} ←</span>
+                <button
+                  onClick={() => pickCategory(activeRoot!.name)}
+                  className={`shrink-0 rounded-pill border px-3.5 py-1.5 text-[12px] font-bold ${
+                    filters.category === activeRoot!.name ? "border-blue bg-blue text-white" : "border-blue/30 bg-blue/5 text-blue"
+                  }`}
+                >
+                  همه‌ی {activeRoot!.name}
+                </button>
+                {subs.map((s) => pill(s.name, s.name, true))}
+              </div>
+            )}
+          </>
+        );
+      })()}
 
       <FilterBar
         filters={filters}

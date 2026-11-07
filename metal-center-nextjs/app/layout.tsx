@@ -15,16 +15,16 @@ export const metadata: Metadata = {
   alternates: { canonical: "/" },
   icons: { icon: "/brand-icon.png", apple: "/brand-icon.png" },
   title: {
-    default: "متال سنتر | پلتفرم هوشمند فولاد",
+    default: "متال سنتر | پلتفرم هوشمند آهن‌آلات",
     template: "%s | متال سنتر",
   },
-  description: "قیمت لحظه‌ای، استعلام آنی و شبکه‌ای معتبر از کارخانه‌های فولاد ایران — برای پیمانکاران، تولیدکنندگان و بازرگانان.",
+  description: "قیمت لحظه‌ای، استعلام آنی و شبکه‌ای معتبر از کارخانه‌های آهن‌آلات ایران — برای پیمانکاران، تولیدکنندگان و بازرگانان.",
   openGraph: {
     type: "website",
     locale: "fa_IR",
     siteName: "متال سنتر",
-    title: "متال سنتر | پلتفرم هوشمند فولاد",
-    description: "قیمت لحظه‌ای، استعلام آنی و شبکه‌ای معتبر از کارخانه‌های فولاد ایران.",
+    title: "متال سنتر | پلتفرم هوشمند آهن‌آلات",
+    description: "قیمت لحظه‌ای، استعلام آنی و شبکه‌ای معتبر از کارخانه‌های آهن‌آلات ایران.",
   },
 };
 
@@ -36,7 +36,7 @@ const organizationSchema = {
   url: siteUrl,
   logo: `${siteUrl}/brand-icon.png`,
   image: `${siteUrl}/brand-icon.png`,
-  description: "پلتفرم هوشمند قیمت‌گذاری، تأمین و خرید فولاد",
+  description: "پلتفرم هوشمند قیمت‌گذاری، تأمین و خرید آهن‌آلات",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
