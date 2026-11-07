@@ -133,5 +133,17 @@ export async function fetchPage(key: string): Promise<SitePage | null> {
   }
 }
 
+// کارخانه‌ها از پنل (با لوگوی آپلودشده)؛ اگر خالی یا خطا بود null برمی‌گرداند و فهرست ثابت استفاده می‌شود
+export type FactoryCard = { name: string; slug: string; logoUrl: string | null; location: string | null };
+export async function fetchFactoryCards(): Promise<FactoryCard[] | null> {
+  try {
+    const { data, error } = await supabase.from("factories").select("name,slug,location,logo_url").order("name");
+    if (error || !data || data.length === 0) return null;
+    return data.map((f) => ({ name: f.name, slug: f.slug, logoUrl: f.logo_url ?? null, location: f.location ?? null }));
+  } catch {
+    return null;
+  }
+}
+
 // عدد فارسی برای نمایش زمان مطالعه
 export const toFa = (n: number) => n.toLocaleString("fa-IR");
