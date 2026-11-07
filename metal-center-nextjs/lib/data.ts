@@ -103,6 +103,7 @@ export interface PriceRow {
   factory?: string;
   category?: string;           // نام زیرمجموعه یا دسته (مثلاً «آجدار»)
   parentCategory?: string;     // نام دسته‌ی اصلی (مثلاً «میلگرد»)
+  colLabels?: { grade?: string; loadingPlace?: string }; // نام ستون‌ها طبق تنظیم دسته
   grade?: string;
   loadingPlace?: string;
   unit?: string;

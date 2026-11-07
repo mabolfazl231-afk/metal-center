@@ -1,10 +1,18 @@
 import { supabase } from "./supabase";
 import type { FactoryGroup, PriceRow } from "./data";
+import { type ColCfg, effectiveConfig, isAttrKey, attrId, BUILTIN_LABELS } from "./columnConfig";
 
 // داده‌ی لیست قیمت را از Supabase می‌خواند و به شکلی تبدیل می‌کند که صفحه‌ی قیمت نیاز دارد.
 // هیچ عدد ساختگی تولید نمی‌شود: تغییر قیمت فقط وقتی نشان داده می‌شود که تاریخچه‌ی واقعی باشد.
 
 type DbPrice = { price: number | string; change_percent: number | string | null; recorded_at: string };
+type CatSrc = {
+  name: string;
+  slug: string;
+  price_columns: string[] | null;
+  hidden_fields: string[] | null;
+  table_config: ColCfg[] | null;
+};
 type DbProduct = {
   id: string;
   name: string;
@@ -16,13 +24,7 @@ type DbProduct = {
   loading_place: string | null;
   price_unit: string | null;
   attributes: Record<string, unknown> | null;
-  categories: {
-    name: string;
-    slug: string;
-    price_columns: string[] | null;
-    hidden_fields: string[] | null;
-    parent: { name: string; price_columns: string[] | null; hidden_fields: string[] | null } | null;
-  } | null;
+  categories: (CatSrc & { parent: CatSrc | null }) | null;
   factories: { name: string; slug: string } | null;
   daily_prices: DbPrice[] | null;
 };
@@ -38,26 +40,34 @@ function stripSize(name: string, size: string | null) {
   return name;
 }
 
-// ستون‌های زیرمجموعه؛ اگر زیرمجموعه ستون ندارد، ستون‌های دسته‌ی اصلی استفاده می‌شود
-// فیلدهای ثابتی که این دسته مخفی کرده؛ اگر دسته خالی بود، از والدش گرفته می‌شود
+// تنظیم ستون‌های دسته‌ی این محصول
+function cfgOf(p: DbProduct): ColCfg[] {
+  return effectiveConfig(p.categories, p.categories?.parent);
+}
+
+// کلیدهای ستون‌هایی که دسته پنهان کرده
 function hiddenOf(p: DbProduct): string[] {
-  const own = p.categories?.hidden_fields ?? [];
-  if (own.length > 0) return own;
-  return p.categories?.parent?.hidden_fields ?? [];
+  return cfgOf(p).filter((c) => c.hidden).map((c) => c.key);
 }
 
+// برچسب ستون‌های ثابت (مثلاً «گرید») طبق تنظیم دسته؛ اگر نبود، همان نام پیش‌فرض
+function labelOf(p: DbProduct, key: string) {
+  return cfgOf(p).find((c) => c.key === key)?.label ?? BUILTIN_LABELS[key] ?? key;
+}
+
+// نام ستون‌های اختصاصی نمایش‌داده‌شده (برای فیلتر)
 function columnsOf(p: DbProduct): string[] {
-  const own = p.categories?.price_columns ?? [];
-  if (own.length > 0) return own;
-  return p.categories?.parent?.price_columns ?? [];
+  return cfgOf(p)
+    .filter((c) => isAttrKey(c.key) && !c.hidden)
+    .map((c) => c.label);
 }
 
-// فقط ستون‌های دارای مقدار را برمی‌گرداند و به ترتیب ستون‌های دسته مرتب می‌کند
+// فقط ستون‌های اختصاصی دارای مقدار، به ترتیب تنظیم دسته
 function attrsOf(p: DbProduct) {
   const values = (p.attributes ?? {}) as Record<string, unknown>;
-  const columns = columnsOf(p);
-  return columns
-    .map((label) => ({ label, value: String(values[label] ?? "").trim() }))
+  return cfgOf(p)
+    .filter((c) => isAttrKey(c.key) && !c.hidden)
+    .map((c) => ({ label: c.label, value: String(values[attrId(c.key)] ?? "").trim() }))
     .filter((a) => a.value !== "");
 }
 
@@ -65,7 +75,7 @@ export async function fetchPriceGroups(): Promise<FactoryGroup[]> {
   const { data, error } = await supabase
     .from("products")
     .select(
-      "id,name,size,weight_kg,in_stock,call_for_price,grade,loading_place,price_unit,attributes,categories(name,slug,price_columns,hidden_fields,parent:categories!parent_id(name,price_columns,hidden_fields)),factories(name,slug),daily_prices(price,change_percent,recorded_at)"
+      "id,name,size,weight_kg,in_stock,call_for_price,grade,loading_place,price_unit,attributes,categories(name,slug,price_columns,hidden_fields,table_config,parent:categories!parent_id(name,slug,price_columns,hidden_fields,table_config)),factories(name,slug),daily_prices(price,change_percent,recorded_at)"
     )
     .eq("visible", true)
     .order("name", { ascending: true })
@@ -96,6 +106,7 @@ export async function fetchPriceGroups(): Promise<FactoryGroup[]> {
     const latest = prices[0];
     const price = latest ? Number(latest.price) : 0;
     const hasChange = prices.length >= 2 && latest.change_percent != null;
+    const hidden = hiddenOf(p);
 
     const row: PriceRow = {
       id: p.id,
@@ -104,10 +115,11 @@ export async function fetchPriceGroups(): Promise<FactoryGroup[]> {
       factory: factoryName,
       category: p.categories?.name,
       parentCategory: p.categories?.parent?.name,
-      weight: p.weight_kg != null ? String(p.weight_kg) : "—",
-      grade: hiddenOf(p).includes("grade") ? "" : p.grade ?? "",
-      loadingPlace: hiddenOf(p).includes("loading_place") ? "" : p.loading_place ?? "",
-      unit: hiddenOf(p).includes("unit") ? "" : p.price_unit ?? "",
+      weight: !hidden.includes("weight_kg") && p.weight_kg != null ? String(p.weight_kg) : "—",
+      grade: hidden.includes("grade") ? "" : p.grade ?? "",
+      loadingPlace: hidden.includes("loading_place") ? "" : p.loading_place ?? "",
+      unit: hidden.includes("unit") ? "" : p.price_unit ?? "",
+      colLabels: { grade: labelOf(p, "grade"), loadingPlace: labelOf(p, "loading_place") },
       price: p.call_for_price ? 0 : price,
       change: hasChange ? Number(latest.change_percent) : 0,
       hasChange,
