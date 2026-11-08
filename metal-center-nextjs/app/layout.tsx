@@ -14,6 +14,8 @@ export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   alternates: { canonical: "/" },
   icons: { icon: "/brand-icon.png", apple: "/brand-icon.png" },
+  // متاتگ تأیید اینماد؛ کد را با کدی که در صفحه‌ی اینماد نمایش داده می‌شود عوض کن
+  other: { enamad: "4049321" },
   title: {
     default: "متال سنتر | پلتفرم هوشمند آهن‌آلات",
     template: "%s | متال سنتر",
