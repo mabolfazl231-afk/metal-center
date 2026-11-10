@@ -1,17 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import Link from "next/link";
 import { supabase } from "@/lib/supabase";
+import { useAuthGuard } from "@/lib/useAuthGuard";
+import { toEn } from "@/lib/rfq";
 import { Mic, FileText, Plus, Trash2 } from "lucide-react";
 
 type Line = { product: string; size: string; quantity: string };
 const EMPTY_LINE: Line = { product: "", size: "", quantity: "" };
 const INPUT = "w-full rounded-xl border border-black/10 bg-steel p-3 text-sm outline-none focus:border-blue";
 
-// ارقام فارسی را لاتین می‌کند تا شماره‌ی موبایل درست ذخیره شود
-const toEn = (s: string) => s.replace(/[۰-۹]/g, (d) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d)));
-
 export default function RfqPage() {
+  const { user, loading } = useAuthGuard();
   const [method, setMethod] = useState<"upload" | "manual">("upload");
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
@@ -22,6 +23,23 @@ export default function RfqPage() {
   const [lines, setLines] = useState<Line[]>([{ ...EMPTY_LINE }]);
   const [status, setStatus] = useState<"idle" | "sending" | "done" | "error">("idle");
   const [errorText, setErrorText] = useState("");
+  const [createdCode, setCreatedCode] = useState("");
+
+  // اطلاعات تماس از پروفایل خریدار پر می‌شود
+  useEffect(() => {
+    if (!user) return;
+    supabase
+      .from("profiles")
+      .select("full_name,mobile")
+      .eq("id", user.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data) {
+          setName(data.full_name ?? "");
+          setPhone(data.mobile ?? "");
+        }
+      });
+  }, [user]);
 
   function updateLine(i: number, patch: Partial<Line>) {
     setLines((ls) => ls.map((l, idx) => (idx === i ? { ...l, ...patch } : l)));
@@ -33,6 +51,7 @@ export default function RfqPage() {
   }
 
   async function handleSubmit() {
+    if (!user) return fail("برای ثبت استعلام ابتدا وارد حساب شوید.");
     const phoneDigits = toEn(phone).replace(/\D/g, "");
     if (!name.trim() || phoneDigits.length < 10) return fail("نام و شماره موبایل معتبر را وارد کنید.");
 
@@ -40,6 +59,14 @@ export default function RfqPage() {
     if (method === "manual" && items.length === 0) return fail("حداقل یک ردیف محصول وارد کنید.");
 
     setStatus("sending");
+    setCreatedCode("");
+
+    // پروفایل را به‌روز می‌کنیم تا دفعه‌ی بعد خودکار پر شود (خطایش مانع ثبت استعلام نمی‌شود)
+    await supabase.from("profiles").upsert(
+      { id: user.id, full_name: name.trim(), mobile: phoneDigits, updated_at: new Date().toISOString() },
+      { onConflict: "id" }
+    );
+
     const fileNote = method === "upload" && files.length > 0 ? `فایل‌های پیوست (نام): ${files.map((f) => f.name).join("، ")}` : "";
     const notesText = [notes.trim(), fileNote, `مقصد: ${destination.trim() || "—"} | زمان تحویل: ${deliveryTime}`]
       .filter(Boolean)
@@ -47,8 +74,15 @@ export default function RfqPage() {
 
     const { data, error } = await supabase
       .from("rfqs")
-      .insert({ customer_name: name.trim(), customer_phone: phoneDigits, method, notes: notesText, status: "pending" })
-      .select("id")
+      .insert({
+        user_id: user.id,
+        customer_name: name.trim(),
+        customer_phone: phoneDigits,
+        customer_email: user.email ?? null,
+        method,
+        notes: notesText,
+      })
+      .select("id,code")
       .single();
     if (error || !data) return fail("ثبت درخواست ناموفق بود. لطفاً دوباره تلاش کنید.");
 
@@ -61,16 +95,19 @@ export default function RfqPage() {
           quantity: l.quantity.trim() || null,
         }))
       );
-      if (itemErr) return fail("درخواست ثبت شد، اما ردیف‌های محصول ذخیره نشدند. لطفاً با پشتیبانی تماس بگیرید.");
+      if (itemErr) return fail("درخواست ثبت شد، اما ردیف‌های محصول ذخیره نشدند. کد استعلام: " + data.code);
     }
 
     setStatus("done");
-    setName("");
-    setPhone("");
+    setCreatedCode(data.code);
     setDestination("");
     setNotes("");
     setFiles([]);
     setLines([{ ...EMPTY_LINE }]);
+  }
+
+  if (loading || !user) {
+    return <div className="flex min-h-[60vh] items-center justify-center text-sm text-ink/50">در حال بارگذاری...</div>;
   }
 
   return (
@@ -121,7 +158,7 @@ export default function RfqPage() {
                 </ul>
               )}
               <p className="mt-3 text-[11px] leading-6 text-ink/45">
-                فعلاً نام فایل همراه درخواست ثبت می‌شود. ارسال خود فایل در نسخه‌ی بعدی فعال می‌شود؛ اگر فایل مهم است، همراه با شماره‌ی خود به واتساپ یا تلگرام هم بفرستید.
+                فعلاً نام فایل همراه درخواست ثبت می‌شود. ارسال خود فایل در نسخه‌ی بعدی فعال می‌شود؛ اگر فایل مهم است، کد استعلام را همراه با فایل به واتساپ یا تلگرام بفرستید.
               </p>
 
               <button type="button" disabled title="به‌زودی" className="mt-3 flex w-full cursor-not-allowed items-center justify-center gap-2 rounded-xl border border-dashed border-black/10 py-3 text-xs font-semibold text-ink/40">
@@ -179,7 +216,17 @@ export default function RfqPage() {
             >
               {status === "sending" ? "در حال ارسال..." : "ارسال درخواست استعلام"}
             </button>
-            {status === "done" && <p className="text-center text-sm font-bold text-success">✓ درخواست شما با موفقیت ثبت شد!</p>}
+            {status === "done" && (
+              <div className="rounded-xl bg-success/10 p-3 text-center text-sm">
+                <p className="font-bold text-success">✓ درخواست شما ثبت شد.</p>
+                <p className="mt-1 text-xs text-ink/70">
+                  کد استعلام شما: <b dir="ltr" className="text-ink">{createdCode}</b>
+                </p>
+                <Link href="/panel" className="mt-2 inline-block text-xs font-bold text-blue">
+                  پیگیری در پنل من ←
+                </Link>
+              </div>
+            )}
             {status === "error" && <p className="text-center text-sm font-bold text-danger">{errorText}</p>}
           </div>
         </div>
