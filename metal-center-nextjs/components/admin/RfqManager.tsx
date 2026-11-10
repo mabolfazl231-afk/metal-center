@@ -3,42 +3,37 @@
 import { useEffect, useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { RFQ_STATUSES, faDateTime, statusLabel, statusStyle, type RfqStatus } from "@/lib/rfq";
 
-type Item = { product_name: string; size: string | null; quantity: string | null; unit: string | null; standard: string | null };
-type Status = "pending" | "review" | "done";
+type Item = { product_name: string; size: string | null; quantity: string | null; standard: string | null };
 type Rfq = {
   id: string;
+  code: string;
   customer_name: string;
   customer_phone: string;
   customer_email: string | null;
   method: "upload" | "manual";
   notes: string | null;
-  status: Status;
+  status: RfqStatus;
   created_at: string;
   rfq_items: Item[] | null;
 };
-
-const STATUS_LABEL: Record<Status, string> = { pending: "در انتظار بررسی", review: "در حال قیمت‌گذاری", done: "تکمیل‌شده" };
-const STATUS_STYLE: Record<Status, string> = {
-  pending: "bg-warning/15 text-[#B87700]",
-  review: "bg-blue/10 text-blue",
-  done: "bg-success/10 text-success",
-};
-
+type LogRow = { id: number; from_status: string | null; to_status: string; created_at: string };
 type Msg = { type: "ok" | "err"; text: string } | null;
 
 export default function RfqManager() {
   const [rfqs, setRfqs] = useState<Rfq[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<"all" | Status>("all");
+  const [filter, setFilter] = useState<"all" | RfqStatus>("all");
   const [openId, setOpenId] = useState<string | null>(null);
   const [msg, setMsg] = useState<Msg>(null);
+  const [logVersion, setLogVersion] = useState(0);
 
   async function load() {
     setLoading(true);
     const { data, error } = await supabase
       .from("rfqs")
-      .select("id,customer_name,customer_phone,customer_email,method,notes,status,created_at,rfq_items(product_name,size,quantity,unit,standard)")
+      .select("id,code,customer_name,customer_phone,customer_email,method,notes,status,created_at,rfq_items(product_name,size,quantity,standard)")
       .order("created_at", { ascending: false })
       .limit(300);
     setLoading(false);
@@ -50,10 +45,12 @@ export default function RfqManager() {
     load();
   }, []);
 
-  async function changeStatus(r: Rfq, status: Status) {
+  async function changeStatus(r: Rfq, status: RfqStatus) {
     const { error } = await supabase.from("rfqs").update({ status }).eq("id", r.id);
     if (error) return setMsg({ type: "err", text: "تغییر وضعیت ناموفق بود: " + error.message });
     setRfqs((list) => list.map((x) => (x.id === r.id ? { ...x, status } : x)));
+    setLogVersion((v) => v + 1); // تاریخچه‌ی باز را دوباره می‌خواند
+    setMsg({ type: "ok", text: `وضعیت ${r.code} به «${statusLabel(status)}» تغییر کرد.` });
   }
 
   const shown = rfqs.filter((r) => filter === "all" || r.status === filter);
@@ -61,7 +58,9 @@ export default function RfqManager() {
   return (
     <div>
       <h1 className="mb-1 text-xl font-extrabold">مدیریت استعلام‌ها</h1>
-      <p className="mb-5 text-sm text-ink/50">همه‌ی استعلام‌های ثبت‌شده از سایت. با فلش هر کدام جزئیات و ردیف‌های محصول را ببین.</p>
+      <p className="mb-5 text-sm text-ink/50">
+        همه‌ی استعلام‌ها با کد یکتا. تغییر وضعیت، برای مشتری در پنل او و در تاریخچه ثبت می‌شود.
+      </p>
 
       {msg && (
         <div className={`mb-5 rounded-xl px-4 py-3 text-sm font-semibold ${msg.type === "ok" ? "bg-success/10 text-success" : "bg-danger/10 text-danger"}`}>
@@ -70,7 +69,7 @@ export default function RfqManager() {
       )}
 
       <div className="mb-4 flex flex-wrap gap-2">
-        {(["all", "pending", "review", "done"] as const).map((f) => (
+        {(["all", ...RFQ_STATUSES] as const).map((f) => (
           <button
             key={f}
             onClick={() => setFilter(f)}
@@ -78,7 +77,7 @@ export default function RfqManager() {
               filter === f ? "border-blue bg-blue text-white" : "border-black/10 bg-white text-ink/60"
             }`}
           >
-            {f === "all" ? "همه" : STATUS_LABEL[f]}
+            {f === "all" ? "همه" : statusLabel(f)}
             {f !== "all" && <span className="ms-1.5 opacity-70">{rfqs.filter((r) => r.status === f).length}</span>}
           </button>
         ))}
@@ -98,9 +97,12 @@ export default function RfqManager() {
                 <div className="flex flex-wrap items-center gap-3">
                   <button onClick={() => setOpenId(open ? null : r.id)} className="flex min-w-0 flex-1 items-center gap-3 text-start" aria-expanded={open}>
                     <div className="min-w-0 flex-1">
-                      <div className="truncate text-sm font-extrabold">{r.customer_name}</div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-sm font-extrabold" dir="ltr">{r.code}</span>
+                        <span className="truncate text-sm font-semibold">{r.customer_name}</span>
+                      </div>
                       <div className="mt-0.5 text-[11.5px] text-ink/50">
-                        <span dir="ltr">{r.customer_phone}</span> · {new Date(r.created_at).toLocaleString("fa-IR", { dateStyle: "short", timeStyle: "short" })}
+                        <span dir="ltr">{r.customer_phone}</span> · {faDateTime(r.created_at)}
                       </div>
                     </div>
                     <span className="rounded-pill bg-black/5 px-2.5 py-1 text-[11px] font-bold text-ink/60">
@@ -110,11 +112,11 @@ export default function RfqManager() {
                   </button>
                   <select
                     value={r.status}
-                    onChange={(e) => changeStatus(r, e.target.value as Status)}
-                    className={`rounded-pill px-3 py-1.5 text-xs font-bold outline-none ${STATUS_STYLE[r.status]}`}
+                    onChange={(e) => changeStatus(r, e.target.value as RfqStatus)}
+                    className={`rounded-pill px-3 py-1.5 text-xs font-bold outline-none ${statusStyle(r.status)}`}
                   >
-                    {(Object.keys(STATUS_LABEL) as Status[]).map((s) => (
-                      <option key={s} value={s}>{STATUS_LABEL[s]}</option>
+                    {RFQ_STATUSES.map((s) => (
+                      <option key={s} value={s}>{statusLabel(s)}</option>
                     ))}
                   </select>
                 </div>
@@ -147,6 +149,10 @@ export default function RfqManager() {
                     )}
                     {r.notes && <p className="whitespace-pre-line rounded-xl bg-steel p-3 text-xs leading-6 text-ink/70">{r.notes}</p>}
                     {r.customer_email && <div className="text-xs text-ink/50" dir="ltr">{r.customer_email}</div>}
+                    <div>
+                      <div className="mb-2 text-xs font-bold text-ink/50">تاریخچه وضعیت</div>
+                      <StatusLog rfqId={r.id} version={logVersion} />
+                    </div>
                   </div>
                 )}
               </div>
@@ -155,5 +161,39 @@ export default function RfqManager() {
         </div>
       )}
     </div>
+  );
+}
+
+function StatusLog({ rfqId, version }: { rfqId: string; version: number }) {
+  const [rows, setRows] = useState<LogRow[] | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    supabase
+      .from("rfq_status_log")
+      .select("id,from_status,to_status,created_at")
+      .eq("rfq_id", rfqId)
+      .order("created_at")
+      .then(({ data }) => {
+        if (!cancelled) setRows((data ?? []) as LogRow[]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [rfqId, version]);
+
+  if (rows === null) return <p className="text-xs text-ink/40">در حال بارگذاری...</p>;
+  if (rows.length === 0) return <p className="text-xs text-ink/40">تاریخچه‌ای ثبت نشده است.</p>;
+  return (
+    <ol className="space-y-1.5 text-xs">
+      {rows.map((r) => (
+        <li key={r.id} className="flex flex-wrap gap-2">
+          <span className="text-ink/40">{faDateTime(r.created_at)}</span>
+          <span>
+            {r.from_status ? `${statusLabel(r.from_status)} ← ` : "ثبت اولیه: "}
+            <b>{statusLabel(r.to_status)}</b>
+          </span>
+        </li>
+      ))}
+    </ol>
   );
 }
