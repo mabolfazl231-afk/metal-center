@@ -7,7 +7,7 @@ import { categories as staticCategories } from "@/lib/data";
 // دسته‌های اصلی و دسته‌بندی‌های زیرشان از Supabase خوانده می‌شوند.
 // اگر دیتابیس خالی یا خطادار باشد، همان فهرست ثابت قبلی استفاده می‌شود تا سایت خالی نشود.
 
-export type CatChild = { name: string; slug: string };
+export type CatChild = { name: string; slug: string; image: string };
 export type CatNode = {
   name: string;
   slug: string;
@@ -64,7 +64,9 @@ function buildFromRows(rows: Row[]) {
       showOnHome: r.show_on_home === true,
       count: meta?.count ?? "",
       sizes: meta?.sizes ?? [],
-      children: sorted.filter((k) => k.parent_id === r.id).map((k) => ({ name: k.name, slug: k.slug })),
+      children: sorted
+        .filter((k) => k.parent_id === r.id)
+        .map((k) => ({ name: k.name, slug: k.slug, image: k.image_url ?? "" })),
     };
   });
 
@@ -102,4 +104,56 @@ export function useCategories() {
   }, []);
 
   return { ...data, loaded };
+}
+
+// کارخانه‌هایی که محصولات هر دسته به آن‌ها وصل است.
+// کلید = نام خود دسته (اصلی یا زیرمجموعه)؛ کارخانه‌ها در دسته‌ی اصلی هم جمع می‌شوند.
+export type CatFactory = { name: string; slug: string; logoUrl: string | null };
+export function useFactoriesByCategory() {
+  const [map, setMap] = useState<Record<string, CatFactory[]>>({});
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const [cats, prods] = await Promise.all([
+          supabase.from("categories").select("id,name,parent_id"),
+          supabase.from("products").select("category_id,factories(name,slug,logo_url)").eq("visible", true).limit(2000),
+        ]);
+        if (cancelled || cats.error || prods.error) return;
+
+        const byId = new Map((cats.data ?? []).map((c) => [c.id as string, c]));
+        const out: Record<string, CatFactory[]> = {};
+        const rows = (prods.data ?? []) as unknown as {
+          category_id: string | null;
+          factories: { name: string; slug: string; logo_url: string | null } | null;
+        }[];
+
+        const push = (key: string, f: CatFactory) => {
+          const list = out[key] ?? (out[key] = []);
+          if (!list.some((x) => x.name === f.name)) list.push(f);
+        };
+
+        for (const p of rows) {
+          const cat = p.category_id ? byId.get(p.category_id) : undefined;
+          if (!cat || !p.factories) continue;
+          const catName = cat.name as string;
+          const rootId = cat.parent_id && byId.has(cat.parent_id) ? cat.parent_id : cat.id;
+          const rootName = byId.get(rootId)?.name as string | undefined;
+          if (!rootName) continue;
+          const f: CatFactory = { name: p.factories.name, slug: p.factories.slug, logoUrl: p.factories.logo_url };
+          push(catName, f);
+          if (rootName !== catName) push(rootName, f);
+        }
+        if (!cancelled) setMap(out);
+      } catch {
+        // بدون کارخانه نشان داده می‌شود
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  return map;
 }
