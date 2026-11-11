@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { factories as staticFactories } from "@/lib/data";
 import { fetchFactoryCards, fetchPage, type FactoryCard } from "@/lib/cms";
 import PageBanner from "@/components/PageBanner";
@@ -27,27 +28,28 @@ export default async function FactoriesPage() {
       />
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
         {list.map((f) => (
-          <div key={f.name} className="overflow-hidden rounded-card border border-border-light bg-white shadow-soft dark:border-border-dark dark:bg-surface-dark">
-            <div className="relative h-[100px] bg-gradient-to-br from-[#123a6e] to-blue">
-              <span className="absolute end-2.5 top-2.5 rounded-full bg-white/15 px-2.5 py-1 text-[10.5px] font-bold text-white backdrop-blur">
-                ✓ تأییدشده
-              </span>
-            </div>
-            <div className="p-5">
-              <div className="-mt-9 mb-3 flex h-12 w-14 items-center justify-center overflow-hidden rounded-xl border-4 border-white bg-white p-1 text-sm font-extrabold text-blue shadow-soft">
-                {f.logoUrl ? (
-                  <FactoryLogo slug={f.slug} name={f.name} url={f.logoUrl} />
-                ) : (
-                  f.name.slice(0, 2)
-                )}
-              </div>
-              <div className="font-bold">{f.name}</div>
+          <div key={f.name} className="flex flex-col overflow-hidden rounded-card border border-border-light bg-white shadow-soft dark:border-border-dark dark:bg-surface-dark">
+            {/* لوگو کل بالای کارت را پر می‌کند؛ کلیک، لیست قیمت همان کارخانه را باز می‌کند */}
+            <Link href={`/prices?factory=${encodeURIComponent(f.name)}`} className="flex h-[170px] items-center justify-center bg-logo-white p-6">
+              {f.logoUrl ? (
+                <FactoryLogo slug={f.slug} name={f.name} url={f.logoUrl} />
+              ) : (
+                <span className="text-4xl font-extrabold text-blue">{f.name.slice(0, 2)}</span>
+              )}
+            </Link>
+            <div className="flex flex-1 flex-col p-5">
+              <Link href={`/prices?factory=${encodeURIComponent(f.name)}`} className="font-bold hover:text-blue">
+                {f.name}
+              </Link>
               <div className="mt-1 text-xs text-ink/50 dark:text-white/40">{infoOf(f)}</div>
               {productsOf(f) !== undefined && (
                 <div className="mt-3 border-t border-black/5 pt-3 text-xs text-ink/50 dark:text-white/40">
-                  <b className="text-ink">{productsOf(f)}</b> محصول فعال
+                  <b className="text-ink dark:text-white">{productsOf(f)}</b> محصول فعال
                 </div>
               )}
+              <Link href={`/prices?factory=${encodeURIComponent(f.name)}`} className="mt-4 text-xs font-bold text-blue">
+                مشاهده لیست قیمت ←
+              </Link>
             </div>
           </div>
         ))}
