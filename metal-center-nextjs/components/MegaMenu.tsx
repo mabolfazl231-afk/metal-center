@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { factories } from "@/lib/data";
-import { useCategories } from "@/lib/useCategories";
+import { useCategories, useFactoriesByCategory } from "@/lib/useCategories";
 
 const SIMPLE_CONTENT: Record<string, { columns: { title: string; links: { label: string; href: string }[] }[]; banner: string }> = {
   factories: {
@@ -45,7 +45,19 @@ const SIMPLE_CONTENT: Record<string, { columns: { title: string; links: { label:
 // تصویر بدون پس‌زمینه‌ی هر دسته (در public/products). اگر نبود، کاشی سه‌بعدی با آیکون نمایش داده می‌شود.
 const IMAGE_SLUGS = ["rebar", "beam", "sheet", "profile", "channel"];
 
-function CategoryThumb({ slug, color, size }: { slug: string; color: string; size: "sm" | "lg" }) {
+function CategoryThumb({ slug, color, size, image }: { slug: string; color: string; size: "sm" | "lg"; image?: string }) {
+  // عکس آپلودشده از پنل اولویت دارد
+  if (image) {
+    return (
+      <img
+        src={image}
+        alt=""
+        aria-hidden
+        loading="lazy"
+        className={`${size === "sm" ? "h-9 w-10" : "h-full w-auto"} flex-shrink-0 object-contain drop-shadow-[0_8px_8px_rgba(0,0,0,0.3)]`}
+      />
+    );
+  }
   if (IMAGE_SLUGS.includes(slug)) {
     return (
       <img
@@ -67,13 +79,24 @@ function CategoryThumb({ slug, color, size }: { slug: string; color: string; siz
   );
 }
 
-// Mega Menu دو سطحی محصولات: ستون دسته‌ها (با تصویر کوچک)، وقتی روی یکی هاور یا لمس می‌شود
-// همان پنل به سایزها، کارخانه‌ها و تصویر بزرگ آن دسته تغییر می‌کند (بدون پنجره‌ی جدید).
+// Mega Menu محصولات: ستون دسته‌های اصلی ← با هاور، زیرمجموعه‌ها و کارخانه‌های همان زیرمجموعه (یا دسته) و تصویر آن.
+// هیچ سایز یا تعدادی نشان داده نمی‌شود. همه‌ی لینک‌ها به صفحه‌ی محصول می‌روند.
 function ProductsMegaMenu() {
   const { nodes } = useCategories();
+  const factoriesMap = useFactoriesByCategory();
   const [activeName, setActiveName] = useState<string | null>(null);
+  const [childName, setChildName] = useState<string | null>(null);
+
   const active = nodes.find((n) => n.name === activeName) ?? nodes[0];
   if (!active) return null;
+
+  const child = childName ? active.children.find((k) => k.name === childName) ?? null : null;
+  const focusName = child ? child.name : active.name;
+  const linkedFactories = factoriesMap[focusName] ?? [];
+  const targetSlug = child ? child.slug : active.slug;
+  const pickImage =
+    (child?.image || active.image) ||
+    (IMAGE_SLUGS.includes(targetSlug) ? `/products/${targetSlug}.png` : "");
 
   return (
     <div className="mx-auto grid max-w-[1240px] grid-cols-[250px_1fr] px-6 py-2">
@@ -81,23 +104,28 @@ function ProductsMegaMenu() {
         {nodes.map((c) => (
           <Link
             key={c.name}
-            href={`/prices?cat=${c.slug}`}
-            onMouseEnter={() => setActiveName(c.name)}
-            onFocus={() => setActiveName(c.name)}
+            href={`/products/${c.slug}`}
+            onMouseEnter={() => {
+              setActiveName(c.name);
+              setChildName(null);
+            }}
+            onFocus={() => {
+              setActiveName(c.name);
+              setChildName(null);
+            }}
             className={`flex w-full items-center gap-3 rounded-xl px-2.5 py-2 text-start text-sm font-semibold transition-colors ${
               active.name === c.name ? "bg-blue/10 text-blue" : "text-ink/70 hover:bg-steel dark:text-white/70 dark:hover:bg-white/5"
             }`}
           >
-            <CategoryThumb slug={c.slug} color={c.color} size="sm" />
+            <CategoryThumb slug={c.slug} color={c.color} size="sm" image={c.image || undefined} />
             <span className="flex-1">{c.name}</span>
-            {c.count && <span className="text-[10.5px] font-normal text-ink/30">{c.count}</span>}
           </Link>
         ))}
       </div>
 
       <AnimatePresence mode="wait">
         <motion.div
-          key={active.name}
+          key={active.name + (child?.name ?? "")}
           initial={{ opacity: 0, x: -8 }}
           animate={{ opacity: 1, x: 0 }}
           exit={{ opacity: 0 }}
@@ -105,54 +133,74 @@ function ProductsMegaMenu() {
           className="grid grid-cols-[1fr_1fr_1.2fr] gap-8 py-5 ps-6"
         >
           <div>
-            <div className="mb-3 text-[11px] font-bold uppercase tracking-wide text-ink/40 dark:text-white/40">
-              {active.children.length > 0 ? "دسته‌بندی‌ها" : "سایزها"}
-            </div>
-            <div className="flex flex-wrap gap-1.5">
-              {(active.children.length > 0
-                ? active.children
-                : active.sizes.map((s) => ({ name: s, slug: active.slug }))
-              ).map((s) => (
-                <Link
-                  key={s.name}
-                  href={`/prices?cat=${s.slug}`}
-                  className="rounded-lg border border-border-light px-2.5 py-1.5 text-xs font-semibold text-ink/70 hover:border-blue hover:text-blue dark:border-border-dark dark:text-white/70"
-                >
-                  {s.name}
-                </Link>
-              ))}
-            </div>
-          </div>
-          <div>
-            <div className="mb-3 text-[11px] font-bold uppercase tracking-wide text-ink/40 dark:text-white/40">کارخانه‌های تأمین‌کننده</div>
-            <ul className="space-y-2">
-              {factories.slice(0, 4).map((f) => (
-                <li key={f.name}>
-                  <Link href="/factories" className="text-sm font-medium text-ink/75 hover:text-blue dark:text-white/75">
-                    {f.name}
+            <div className="mb-3 text-[11px] font-bold uppercase tracking-wide text-ink/40 dark:text-white/40">زیرمجموعه‌ها</div>
+            {active.children.length === 0 ? (
+              <p className="text-xs text-ink/40">این دسته زیرمجموعه ندارد.</p>
+            ) : (
+              <div className="flex flex-wrap gap-1.5">
+                {active.children.map((k) => (
+                  <Link
+                    key={k.slug}
+                    href={`/products/${k.slug}`}
+                    onMouseEnter={() => setChildName(k.name)}
+                    onFocus={() => setChildName(k.name)}
+                    className={`rounded-lg border px-2.5 py-1.5 text-xs font-semibold hover:border-blue hover:text-blue dark:border-border-dark dark:text-white/70 ${
+                      childName === k.name ? "border-blue text-blue" : "border-border-light text-ink/70"
+                    }`}
+                  >
+                    {k.name}
                   </Link>
-                </li>
-              ))}
-            </ul>
+                ))}
+              </div>
+            )}
           </div>
+
+          <div>
+            <div className="mb-3 text-[11px] font-bold uppercase tracking-wide text-ink/40 dark:text-white/40">
+              کارخانه‌های تأمین‌کننده{child ? ` ${child.name}` : ""}
+            </div>
+            {linkedFactories.length === 0 ? (
+              <p className="text-xs text-ink/40">هنوز کارخانه‌ای برای {focusName} ثبت نشده است.</p>
+            ) : (
+              <ul className="space-y-2">
+                {linkedFactories.slice(0, 6).map((f) => (
+                  <li key={f.name}>
+                    <Link
+                      href={`/prices?cat=${targetSlug}&factory=${encodeURIComponent(f.name)}`}
+                      className="flex items-center gap-2.5 text-sm font-medium text-ink/75 hover:text-blue dark:text-white/75"
+                    >
+                      {f.logoUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={f.logoUrl} alt="" loading="lazy" className="h-7 w-9 flex-shrink-0 rounded-md border border-border-light bg-logo-white object-contain p-0.5" />
+                      ) : (
+                        <span className="flex h-7 w-9 flex-shrink-0 items-center justify-center rounded-md bg-steel text-[10px] font-bold text-blue">{f.name.slice(0, 2)}</span>
+                      )}
+                      {f.name}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
           <Link
-            href={`/prices?cat=${active.slug}`}
+            href={`/products/${targetSlug}`}
             className="group relative flex flex-col overflow-hidden rounded-2xl bg-gradient-to-br from-blue to-navy p-5 text-white"
           >
             <div className="pointer-events-none absolute -end-8 -top-8 h-32 w-32 rounded-full bg-white/10 blur-2xl" />
             <div className="relative flex h-28 items-end justify-center">
-              {IMAGE_SLUGS.includes(active.slug) ? (
+              {pickImage ? (
                 <img
-                  src={`/products/${active.slug}.png`}
-                  alt={active.name}
+                  src={pickImage}
+                  alt={focusName}
                   className="h-full w-auto object-contain drop-shadow-[0_14px_14px_rgba(0,0,0,0.45)] transition duration-300 group-hover:scale-105"
                 />
               ) : (
                 <CategoryThumb slug={active.slug} color={active.color} size="lg" />
               )}
             </div>
-            <p className="relative mt-4 text-sm font-bold leading-6">{active.name} — قیمت لحظه‌ای و استعلام آنی</p>
-            <span className="relative mt-3 text-xs font-bold text-[#7FB2FF]">مشاهده قیمت {active.name} ←</span>
+            <p className="relative mt-4 text-sm font-bold leading-6">{focusName} — قیمت لحظه‌ای و استعلام آنی</p>
+            <span className="relative mt-3 text-xs font-bold text-[#7FB2FF]">مشاهده {focusName} ←</span>
           </Link>
         </motion.div>
       </AnimatePresence>

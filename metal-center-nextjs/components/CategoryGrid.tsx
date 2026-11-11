@@ -27,7 +27,7 @@ export default function CategoryGrid({ variant }: { variant: "home" | "products"
             className="group relative flex flex-col overflow-hidden rounded-card p-7 text-center text-white shadow-lifted transition duration-300 hover:-translate-y-1.5 hover:shadow-glow"
             style={{ background: `linear-gradient(135deg, ${c.color}, ${c.color}cc)` }}
           >
-            <Link href={`/category/${c.slug}`} className="flex flex-col items-center">
+            <Link href={`/products/${c.slug}`} className="flex flex-col items-center">
               <CardImage node={c} tone="light" />
               <div className="text-lg font-extrabold">{c.name}</div>
               {c.count && <div className="mt-1 text-xs opacity-80">{c.count}</div>}
@@ -52,7 +52,7 @@ export default function CategoryGrid({ variant }: { variant: "home" | "products"
           className="group flex flex-col rounded-card border-2 bg-white p-5 text-center shadow-soft transition-all hover:-translate-y-1 hover:shadow-lifted dark:bg-surface-dark"
           style={{ borderColor: `${c.color}55` }}
         >
-          <Link href={`/category/${c.slug}`} className="flex flex-col items-center">
+          <Link href={`/products/${c.slug}`} className="flex flex-col items-center">
             <CardImage node={c} tone="dark" />
             <div className="text-[14px] font-bold">{c.name}</div>
             {c.count && <div className="mt-1 text-xs text-ink/50 dark:text-white/40">{c.count}</div>}
@@ -100,7 +100,7 @@ function SubLinks({ node, tone }: { node: CatNode; tone: "light" | "dark" }) {
   return (
     <div className="mt-4 flex flex-wrap justify-center gap-1.5">
       {node.children.map((k) => (
-        <Link key={k.slug} href={`/prices?cat=${k.slug}`} className={cls}>
+        <Link key={k.slug} href={`/products/${k.slug}`} className={cls}>
           {/* نام کامل: «میلگرد آجدار»، مگر اینکه نام دسته‌بندی خودش شامل نام والد باشد */}
           {k.name.includes(node.name) ? k.name : `${node.name} ${k.name}`}
         </Link>

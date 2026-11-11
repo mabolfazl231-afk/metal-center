@@ -59,17 +59,21 @@ export default function FactorySlider() {
           {[...list, ...list].map((f, i) => (
             <div
               key={f.name + i}
-              className="w-[260px] flex-shrink-0 snap-start overflow-hidden rounded-card border border-border-light bg-white shadow-soft dark:border-border-dark dark:bg-surface-dark"
+              className="flex w-[260px] flex-shrink-0 snap-start flex-col overflow-hidden rounded-card border border-border-light bg-white shadow-soft dark:border-border-dark dark:bg-surface-dark"
             >
-              <div className="flex h-[100px] items-center justify-center bg-gradient-to-br from-[#123a6e] to-blue p-4">
-                <div className="flex h-full w-full items-center justify-center">
-                  <FactoryLogo slug={f.slug} name={f.name} url={f.logoUrl ?? undefined} />
-                </div>
-              </div>
-              <div className="p-4">
-                <div className="mb-1 font-bold">{f.name}</div>
+              {/* لوگو کل بالای کارت؛ کلیک، لیست قیمت همان کارخانه را باز می‌کند */}
+              <Link
+                href={`/prices?factory=${encodeURIComponent(f.name)}`}
+                className="flex h-[130px] items-center justify-center bg-logo-white p-5"
+              >
+                <FactoryLogo slug={f.slug} name={f.name} url={f.logoUrl ?? undefined} />
+              </Link>
+              <div className="flex flex-1 flex-col p-4">
+                <Link href={`/prices?factory=${encodeURIComponent(f.name)}`} className="mb-1 font-bold hover:text-blue">
+                  {f.name}
+                </Link>
                 <div className="mb-3 text-xs text-ink/50 dark:text-white/40">{infoOf(f)}</div>
-                <div className="flex gap-2">
+                <div className="mt-auto flex gap-2">
                   <a href={`tel:${PRIMARY_PHONE}`} className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl bg-steel text-xs font-semibold dark:bg-white/5">
                     <Phone size={13} /> تماس
                   </a>

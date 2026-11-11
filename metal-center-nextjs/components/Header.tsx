@@ -8,6 +8,8 @@ import SmartSearch from "./SmartSearch";
 import MegaMenu from "./MegaMenu";
 import Drawer from "./ui/Drawer";
 import ThemeToggle from "./ThemeToggle";
+import { supabase } from "@/lib/supabase";
+import { signOut } from "@/lib/useAuthGuard";
 
 // منوی اصلی نهایی — فقط ۶ آیتم طبق درخواست
 const NAV_LINKS = [
@@ -71,6 +73,14 @@ export default function Header() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [openMega, setOpenMega] = useState<string | null>(null);
   const [scrolled, setScrolled] = useState(false);
+  const [loggedIn, setLoggedIn] = useState(false);
+
+  // اگر کاربر وارد شده باشد، «ورود» به «پنل من» و «خروج» تبدیل می‌شود
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => setLoggedIn(!!data.session));
+    const { data: listener } = supabase.auth.onAuthStateChange((_e, session) => setLoggedIn(!!session));
+    return () => listener.subscription.unsubscribe();
+  }, []);
 
   useEffect(() => {
     function onScroll() {
@@ -153,12 +163,21 @@ export default function Header() {
             <Languages size={17} />
           </IconBtn>
           <ThemeToggle />
-          <Link
-            href="/login"
-            className="rounded-btn border border-border-light bg-white/70 px-[16px] py-[11px] text-sm font-semibold backdrop-blur transition-all hover:border-blue hover:text-blue dark:border-border-dark dark:bg-white/5"
-          >
-            ورود
-          </Link>
+          {loggedIn ? (
+            <Link
+              href="/panel"
+              className="rounded-btn border border-border-light bg-white/70 px-[16px] py-[11px] text-sm font-semibold backdrop-blur transition-all hover:border-blue hover:text-blue dark:border-border-dark dark:bg-white/5"
+            >
+              پنل من
+            </Link>
+          ) : (
+            <Link
+              href="/login"
+              className="rounded-btn border border-border-light bg-white/70 px-[16px] py-[11px] text-sm font-semibold backdrop-blur transition-all hover:border-blue hover:text-blue dark:border-border-dark dark:bg-white/5"
+            >
+              ورود
+            </Link>
+          )}
           <Link
             href="/rfq"
             className="rounded-btn bg-blue px-[16px] py-[11px] text-sm font-semibold text-white transition-colors duration-btn hover:bg-navy"
@@ -232,19 +251,47 @@ export default function Header() {
           ))}
         </div>
 
-        <Link
-          href="/login"
-          onClick={() => setQuickOpen(false)}
-          className="mb-4 flex items-center gap-3 rounded-2xl border border-blue/20 bg-blue/5 p-3.5 transition-all hover:border-blue hover:bg-blue/10"
-        >
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue text-white">
-            <LogIn size={17} />
+        {loggedIn ? (
+          <div className="mb-4 space-y-2">
+            <Link
+              href="/panel"
+              onClick={() => setQuickOpen(false)}
+              className="flex items-center gap-3 rounded-2xl border border-blue/20 bg-blue/5 p-3.5 transition-all hover:border-blue hover:bg-blue/10"
+            >
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue text-white">
+                <LogIn size={17} />
+              </div>
+              <div>
+                <div className="text-sm font-bold">پنل من</div>
+                <div className="text-[11px] text-ink/50 dark:text-white/40">استعلام‌ها، پیش‌فاکتورها و سفارش‌ها</div>
+              </div>
+            </Link>
+            <button
+              type="button"
+              onClick={() => {
+                setQuickOpen(false);
+                signOut();
+              }}
+              className="w-full rounded-2xl border border-danger/30 py-3 text-sm font-bold text-danger"
+            >
+              خروج از حساب
+            </button>
           </div>
-          <div>
-            <div className="text-sm font-bold">ورود / ثبت‌نام</div>
-            <div className="text-[11px] text-ink/50 dark:text-white/40">برای مدیریت استعلام‌ها و علاقه‌مندی‌ها</div>
-          </div>
-        </Link>
+        ) : (
+          <Link
+            href="/login"
+            onClick={() => setQuickOpen(false)}
+            className="mb-4 flex items-center gap-3 rounded-2xl border border-blue/20 bg-blue/5 p-3.5 transition-all hover:border-blue hover:bg-blue/10"
+          >
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue text-white">
+              <LogIn size={17} />
+            </div>
+            <div>
+              <div className="text-sm font-bold">ورود / ثبت‌نام</div>
+              <div className="text-[11px] text-ink/50 dark:text-white/40">برای مدیریت استعلام‌ها و علاقه‌مندی‌ها</div>
+            </div>
+          </Link>
+        )}
 
         <div className="grid grid-cols-2 gap-2">
           <ThemeToggle className="!h-auto !w-full !flex-col !gap-1.5 !rounded-2xl !border !py-3 !text-[11px] !font-semibold" showLabel />
