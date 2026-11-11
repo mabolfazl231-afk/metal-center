@@ -85,3 +85,45 @@ h1,
 .font-display {
   font-family: "Lalezar", "Vazirmatn", sans-serif;
 }
+
+/* ===== حالت تیره: پس‌زمینه‌ی مشکی؛ سطح‌های روشن و متن تیره برعکس می‌شوند ===== */
+.dark body {
+  background: #000 !important;
+  background-image: none !important;
+  color: #fff;
+}
+.dark .bg-white,
+.dark .bg-steel,
+.dark .bg-surface-dark,
+.dark .bg-canvas-dark,
+.dark .bg-surface-light,
+.dark .bg-navy,
+.dark .bg-white\/70,
+.dark .bg-white\/80,
+.dark .bg-white\/95,
+.dark .bg-black\/5 {
+  background-color: #000 !important;
+}
+.dark .bg-black\/5 {
+  background-color: rgba(255, 255, 255, 0.08) !important;
+}
+.dark [class*="text-ink"],
+.dark [class*="text-navy"],
+.dark .text-black {
+  color: #fff !important;
+}
+.dark [class*="border-black/"],
+.dark [class*="border-border-light"],
+.dark .border-steel {
+  border-color: rgba(255, 255, 255, 0.14) !important;
+}
+/* دکمه‌های سفید با متن تیره (مثل «مقایسه») باید سفید بمانند */
+.dark .bg-white.text-navy,
+.dark .bg-white.text-blue {
+  background-color: #fff !important;
+  color: #071b34 !important;
+}
+/* لوگوی کارخانه و عکس محصول همیشه روی زمینه‌ی سفید دیده شوند */
+.dark .bg-logo-white {
+  background-color: #fff !important;
+}
