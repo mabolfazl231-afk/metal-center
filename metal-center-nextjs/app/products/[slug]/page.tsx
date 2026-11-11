@@ -1,173 +1,226 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Package, ShieldCheck, TrendingUp } from "lucide-react";
-import ProductCard from "@/components/product/ProductCard";
-import { dailyPrices, factories } from "@/lib/data";
+import { ChevronLeft } from "lucide-react";
+import { useCategories, type CatChild } from "@/lib/useCategories";
+import { fetchPriceGroups } from "@/lib/priceSource";
+import { ALL, EMPTY_FILTERS, applyFilters } from "@/lib/priceFilters";
+import type { FactoryGroup } from "@/lib/data";
+import FactoryPriceGroup from "@/components/price/FactoryPriceGroup";
+import FactoryLogo from "@/components/factories/FactoryLogo";
 
-const TABS = ["مشخصات فنی", "جدول وزن", "تاریخچه قیمت", "کارخانه سازنده", "سوالات متداول"];
+// صفحه‌ی خودکار هر دسته یا زیرمجموعه: عکس، زیرمجموعه‌ها، کارخانه‌ها، و لیست قیمت با نمودار.
+// همه چیز از دیتابیس می‌آید؛ با افزودن یک دسته در پنل، این صفحه خودکار ساخته می‌شود.
+
+const DEFAULT_IMAGE_SLUGS = ["rebar", "beam", "sheet", "profile", "channel"];
+
+type Info = {
+  name: string;
+  slug: string;
+  image: string;
+  color: string;
+  children: CatChild[];
+  parentName: string | null;
+  parentSlug: string | null;
+};
 
 export default function ProductDetailPage({ params }: { params: { slug: string } }) {
-  const [tab, setTab] = useState(0);
-  const product = dailyPrices[0]; // نمونه — بعداً بر اساس params.slug از دیتابیس گرفته می‌شود
-  const factory = factories[0];
+  const { nodes, flat, loaded } = useCategories();
+  const [groups, setGroups] = useState<FactoryGroup[] | null>(null);
+  const [includeVAT, setIncludeVAT] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchPriceGroups()
+      .then((list) => {
+        if (!cancelled) setGroups(list);
+      })
+      .catch(() => {
+        if (!cancelled) setGroups([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // پیدا کردن دسته‌ی فعلی: اصلی یا زیرمجموعه
+  const root = nodes.find((n) => n.slug === params.slug);
+  const childFlat = flat.find((f) => f.slug === params.slug && f.parentName);
+  const parentNode = childFlat ? nodes.find((n) => n.name === childFlat.parentName) : undefined;
+  const childNode = parentNode?.children.find((k) => k.slug === params.slug);
+
+  const info: Info | null = root
+    ? {
+        name: root.name,
+        slug: root.slug,
+        image: root.image,
+        color: root.color,
+        children: root.children,
+        parentName: null,
+        parentSlug: null,
+      }
+    : childNode && parentNode
+      ? {
+          name: childNode.name,
+          slug: childNode.slug,
+          image: childNode.image,
+          color: parentNode.color,
+          children: [],
+          parentName: parentNode.name,
+          parentSlug: parentNode.slug,
+        }
+      : null;
+
+  if (!info) {
+    return (
+      <div className="mx-auto max-w-[1240px] px-6 py-16 text-center">
+        <p className="mb-4 text-sm text-ink/50">{loaded ? "این محصول پیدا نشد." : "در حال بارگذاری..."}</p>
+        <Link href="/products" className="text-sm font-bold text-blue">بازگشت به محصولات ←</Link>
+      </div>
+    );
+  }
+
+  const imageSrc = info.image || (DEFAULT_IMAGE_SLUGS.includes(info.slug) ? `/products/${info.slug}.png` : "");
+  // ردیف‌های این دسته (خودش و زیرمجموعه‌هایش)
+  const filtered = groups ? applyFilters(groups, { ...EMPTY_FILTERS, category: info.name, factory: ALL }) : [];
+  const rowCount = filtered.reduce((n, g) => n + g.rows.length, 0);
+  // کارخانه‌هایی که همین دسته را دارند؛ هر کدام به لیست قیمت خودش (فیلتر شده) می‌رود
+  const factoryNames = filtered.map((g) => ({ name: g.factory, logoUrl: g.logoUrl ?? null }));
 
   return (
-    <div className="mx-auto max-w-[1100px] px-6 py-10">
-      <div className="mb-6 text-xs text-ink/40">
-        <Link href="/">خانه</Link> / <Link href="/products">محصولات</Link> / <span className="text-ink">{product.name}</span>
-      </div>
+    <div className="mx-auto max-w-[1240px] px-6 py-10">
+      {/* مسیر صفحه */}
+      <nav className="mb-6 flex flex-wrap items-center gap-1.5 text-xs text-ink/50 dark:text-white/40">
+        <Link href="/">خانه</Link>
+        <ChevronLeft size={12} />
+        <Link href="/products">محصولات</Link>
+        {info.parentName && info.parentSlug && (
+          <>
+            <ChevronLeft size={12} />
+            <Link href={`/products/${info.parentSlug}`}>{info.parentName}</Link>
+          </>
+        )}
+        <ChevronLeft size={12} />
+        <span className="font-bold text-ink dark:text-white">{info.name}</span>
+      </nav>
 
-      <div className="grid grid-cols-1 gap-10 lg:grid-cols-2">
-        {/* Gallery */}
-        <div>
-          <div className="mb-3 flex h-[320px] items-center justify-center rounded-card bg-gradient-to-br from-[#123a6e] to-blue">
-            <Package size={72} strokeWidth={1.1} className="text-white/60" />
-          </div>
-          <div className="flex gap-2">
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className={`h-16 w-16 rounded-xl border-2 ${i === 1 ? "border-blue" : "border-border-light"} bg-white`} />
-            ))}
-          </div>
+      {/* سرصفحه: عکس + اطلاعات */}
+      <div className="grid grid-cols-1 gap-8 md:grid-cols-[1fr_1.2fr] md:items-center">
+        <div
+          className="flex h-[260px] items-center justify-center overflow-hidden rounded-card p-6"
+          style={{ background: `linear-gradient(135deg, ${info.color}, ${info.color}cc)` }}
+        >
+          {imageSrc ? (
+            <img src={imageSrc} alt={info.name} className="h-full w-auto object-contain drop-shadow-[0_18px_18px_rgba(0,0,0,0.35)]" />
+          ) : (
+            <span className="icon-3d flex h-20 w-20 items-center justify-center rounded-2xl" style={{ "--tile": info.color } as React.CSSProperties} />
+          )}
         </div>
 
-        {/* Info */}
         <div>
-          <h1 className="mb-2 text-2xl font-extrabold leading-9">{product.name} — شاخه ۱۲ متری</h1>
-          <div className="mb-5 flex flex-wrap gap-2">
-            {["استاندارد A3", "سایز ۱۴mm", "شاخه ۱۲m"].map((t) => (
-              <span key={t} className="rounded-pill bg-steel px-3 py-1 text-xs font-semibold text-ink/60">{t}</span>
-            ))}
+          <h1 className="mb-2 text-[26px] font-extrabold leading-tight">{info.name}</h1>
+          <p className="mb-5 text-sm text-ink/55 dark:text-white/50">
+            {groups === null
+              ? "در حال بارگذاری قیمت‌ها..."
+              : rowCount > 0
+                ? `${rowCount} ردیف قیمت در ${filtered.length} کارخانه`
+                : "هنوز قیمتی برای این محصول ثبت نشده است."}
+          </p>
+
+          <div className="mb-5 flex flex-wrap items-center gap-2">
+            <button
+              role="switch"
+              aria-checked={includeVAT}
+              onClick={() => setIncludeVAT((v) => !v)}
+              className="flex items-center gap-2.5 rounded-xl px-1.5 py-1.5 text-xs font-bold"
+            >
+              <span className={`relative h-6 w-11 flex-shrink-0 rounded-full transition-colors ${includeVAT ? "bg-success" : "bg-ink/20"}`}>
+                <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all ${includeVAT ? "end-0.5" : "start-0.5"}`} />
+              </span>
+              با ارزش‌افزوده (+۱۰٪)
+            </button>
           </div>
 
-          <div className="mb-5 rounded-card border border-border-light bg-white p-5">
-            <div className="mb-1 text-2xl font-extrabold text-blue">
-              {product.price} تومان <span className="text-xs font-medium text-ink/40">/ کیلوگرم</span>
-            </div>
-            <div className="flex items-center gap-1.5 text-xs text-ink/50">
-              <span className="h-1.5 w-1.5 animate-pulse-soft rounded-full bg-success" />
-              آخرین به‌روزرسانی: ۱۵ دقیقه پیش · {product.factory}
-            </div>
-          </div>
-
-          <div className="mb-5 grid grid-cols-2 gap-2.5">
-            {[
-              { label: "کارخانه", value: product.factory },
-              { label: "استاندارد", value: "A3 (ملی ایران)" },
-              { label: "موجودی", value: "موجود", green: true },
-              { label: "حداقل سفارش", value: "۵ تن" },
-            ].map((s) => (
-              <div key={s.label} className="rounded-xl bg-steel p-3">
-                <div className="text-[11px] text-ink/50">{s.label}</div>
-                <div className={`text-sm font-bold ${s.green ? "text-success" : ""}`}>{s.value}</div>
-              </div>
-            ))}
-          </div>
-
-          <div className="flex gap-2.5">
-            <Link href="/rfq" className="flex-1 rounded-btn bg-blue py-3.5 text-center text-sm font-bold text-white hover:bg-navy">
-              درخواست استعلام برای این محصول
+          <div className="flex flex-wrap gap-2.5">
+            <Link href={`/prices?cat=${info.slug}`} className="rounded-btn bg-blue px-5 py-3 text-sm font-bold text-white hover:bg-navy">
+              لیست کامل قیمت
+            </Link>
+            <Link href="/rfq" className="rounded-btn border border-blue px-5 py-3 text-sm font-bold text-blue">
+              استعلام برای این محصول
             </Link>
           </div>
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="mt-12 flex gap-6 overflow-x-auto border-b border-border-light">
-        {TABS.map((t, i) => (
-          <button
-            key={t}
-            onClick={() => setTab(i)}
-            className={`whitespace-nowrap border-b-2 pb-3 text-sm font-semibold ${
-              tab === i ? "border-blue text-blue" : "border-transparent text-ink/50"
-            }`}
-          >
-            {t}
-          </button>
-        ))}
-      </div>
+      {/* زیرمجموعه‌ها */}
+      {info.children.length > 0 && (
+        <section className="mt-12">
+          <h2 className="mb-4 text-lg font-extrabold">انواع {info.name}</h2>
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+            {info.children.map((k) => (
+              <Link
+                key={k.slug}
+                href={`/products/${k.slug}`}
+                className="group flex flex-col items-center rounded-card border border-border-light bg-white p-5 text-center shadow-soft transition hover:-translate-y-1 hover:shadow-lifted dark:border-border-dark dark:bg-surface-dark"
+              >
+                <div className="mb-3 flex h-20 items-center justify-center">
+                  {k.image ? (
+                    <img src={k.image} alt={k.name} loading="lazy" className="h-full w-auto object-contain transition group-hover:scale-110" />
+                  ) : (
+                    <span className="icon-3d h-10 w-10 rounded-xl" style={{ "--tile": info.color } as React.CSSProperties} />
+                  )}
+                </div>
+                <div className="text-sm font-bold">{k.name}</div>
+                <div className="mt-2 text-[11px] font-bold text-blue">مشاهده ←</div>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
 
-      <div className="py-8">
-        {tab === 0 && (
-          <table className="w-full text-sm">
-            <tbody>
-              {[
-                ["استاندارد", "A3 — ملی ایران"],
-                ["قطر اسمی", "۱۴ میلی‌متر"],
-                ["طول شاخه", "۱۲ متر"],
-                ["کاربرد", "سازه‌های بتنی، اسکلت ساختمان"],
-              ].map(([k, v]) => (
-                <tr key={k} className="border-b border-border-light">
-                  <td className="w-1/3 py-3 text-ink/50">{k}</td>
-                  <td className="py-3 font-semibold">{v}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+      {/* کارخانه‌ها */}
+      {factoryNames.length > 0 && (
+        <section className="mt-12">
+          <h2 className="mb-4 text-lg font-extrabold">کارخانه‌های تأمین‌کننده</h2>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+            {factoryNames.map((f) => (
+              <Link
+                key={f.name}
+                href={`/prices?cat=${info.slug}&factory=${encodeURIComponent(f.name)}`}
+                className="flex flex-col items-center rounded-card border border-border-light bg-white p-4 text-center shadow-soft transition hover:-translate-y-1 hover:shadow-lifted dark:border-border-dark dark:bg-surface-dark"
+              >
+                <div className="mb-3 flex h-16 w-full items-center justify-center rounded-xl bg-logo-white p-2">
+                  {f.logoUrl ? (
+                    <img src={f.logoUrl} alt={f.name} loading="lazy" className="max-h-full max-w-full object-contain" />
+                  ) : (
+                    <FactoryLogo slug="" name={f.name} fallbackClassName="text-2xl font-extrabold text-blue" />
+                  )}
+                </div>
+                <div className="text-sm font-bold">{f.name}</div>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
 
-        {tab === 1 && (
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="bg-steel text-xs text-ink/50">
-                <th className="p-3 text-start">سایز (mm)</th>
-                <th className="p-3 text-start">وزن هر شاخه (kg)</th>
-                <th className="p-3 text-start">وزن هر متر (kg)</th>
-              </tr>
-            </thead>
-            <tbody>
-              {[["۱۲", "۱۰.۶", "۰.۸۸"], ["۱۴", "۱۴.۵", "۱.۲۱"], ["۱۶", "۱۸.۹", "۱.۵۸"], ["۱۸", "۲۴.۰", "۲.۰۰"]].map((r) => (
-                <tr key={r[0]} className="border-b border-border-light">
-                  {r.map((c, i) => <td key={i} className="p-3">{c}</td>)}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-
-        {tab === 2 && (
-          <div className="flex items-center gap-2 text-sm text-ink/50">
-            <TrendingUp size={16} /> نمودار تاریخچه قیمت در صفحه‌ی «لیست قیمت» با جزئیات کامل در دسترس است.
+      {/* لیست قیمت با نمودار */}
+      <section className="mt-12">
+        <h2 className="mb-4 text-lg font-extrabold">لیست قیمت</h2>
+        {groups === null ? (
+          <div className="h-24 animate-pulse rounded-card border border-border-light bg-white/70 shadow-soft dark:bg-surface-dark" />
+        ) : filtered.length === 0 ? (
+          <div className="rounded-card border border-dashed border-border-light bg-white py-12 text-center text-sm text-ink/50 dark:bg-surface-dark">
+            قیمتی برای این محصول ثبت نشده است.
+          </div>
+        ) : (
+          <div className="space-y-5">
+            {filtered.map((g) => (
+              <FactoryPriceGroup key={g.factory} group={g} includeVAT={includeVAT} selected={[]} onToggle={() => {}} />
+            ))}
           </div>
         )}
-
-        {tab === 3 && (
-          <div className="flex items-center gap-3 rounded-2xl border border-border-light bg-white p-4">
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-blue to-navy text-white">
-              <ShieldCheck size={18} />
-            </div>
-            <div className="flex-1">
-              <div className="font-bold">{factory.name}</div>
-              <div className="text-xs text-ink/50">{factory.cats} · {factory.products} محصول فعال</div>
-            </div>
-            <Link href="/factories" className="text-xs font-bold text-blue">مشاهده ←</Link>
-          </div>
-        )}
-
-        {tab === 4 && (
-          <div className="space-y-3 text-sm">
-            <details className="rounded-xl border border-border-light p-4">
-              <summary className="cursor-pointer font-bold">حداقل مقدار سفارش چقدر است؟</summary>
-              <p className="mt-2 text-ink/60">حداقل سفارش برای این محصول ۵ تن است.</p>
-            </details>
-            <details className="rounded-xl border border-border-light p-4">
-              <summary className="cursor-pointer font-bold">زمان تحویل معمولاً چقدر طول می‌کشد؟</summary>
-              <p className="mt-2 text-ink/60">بسته به موجودی کارخانه، معمولاً ۲ تا ۵ روز کاری.</p>
-            </details>
-          </div>
-        )}
-      </div>
-
-      {/* Related */}
-      <div className="mt-8">
-        <h2 className="mb-5 text-lg font-extrabold">محصولات مشابه</h2>
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-          {dailyPrices.slice(0, 4).map((p) => (
-            <ProductCard key={p.name} product={{ name: p.name, factory: p.factory, price: p.price, badge: "موجود" }} />
-          ))}
-        </div>
-      </div>
+      </section>
     </div>
   );
 }
