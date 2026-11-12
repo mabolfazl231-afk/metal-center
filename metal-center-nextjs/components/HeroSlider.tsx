@@ -28,7 +28,7 @@ const GRADIENTS = [
 const DEFAULT_SLIDES: Slide[] = [
   {
     key: "default-1",
-    image: "/banners/hero-1.jpg",
+    image: "/hero/truck-hero.jpg",
     gradient: GRADIENTS[0],
     eyebrow: "قیمت‌ها هر ۱۵ دقیقه به‌روزرسانی می‌شوند",
     title: (
