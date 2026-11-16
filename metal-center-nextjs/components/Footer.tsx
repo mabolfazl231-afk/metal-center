@@ -58,12 +58,13 @@ export default async function Footer() {
     <footer className="relative mt-12 overflow-hidden bg-navy text-[#B9C6DC]">
       <FlowLine />
 
-      <div className="mx-auto max-w-[1240px] px-6 pt-9 pb-5">
+      {/* روی گوشی فضای پایین برای نوار منوی شناور باز گذاشته شده */}
+      <div className="mx-auto max-w-[1240px] px-6 pt-9 pb-28 md:pb-5">
         {/* بالای فوتر: برند، تماس و شبکه‌ها در یک ردیف */}
         <Reveal className="flex flex-wrap items-center justify-between gap-5 border-b border-white/10 pb-7">
-          <div className="flex items-center gap-3">
-            <Image src="/logo.png" alt="متال سنتر" width={36} height={36} className="rounded-[10px]" />
-            <div>
+          <div className="flex min-w-0 items-center gap-3">
+            <Image src="/logo.png" alt="متال سنتر" width={36} height={36} className="flex-shrink-0 rounded-[10px]" />
+            <div className="min-w-0">
               <div className="text-[16px] font-extrabold text-white">متال سنتر</div>
               <p className="max-w-[360px] truncate text-[12px] text-[#8A9AB8]">
                 {s.site_description || "پلتفرم هوشمند قیمت‌گذاری، تأمین و خرید آهن‌آلات برای پیمانکاران و صنعتگران."}
@@ -125,7 +126,25 @@ export default async function Footer() {
 
         {/* پایین: کپی‌رایت و کاتالوگ */}
         <Reveal className="flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-4 pb-1 text-[12px] text-[#6F7F9C]">
-          <span>© {PERSIAN_YEAR} متال سنتر. تمامی حقوق محفوظ است.</span>
+          <div className="flex flex-wrap items-center gap-4">
+            {/* نماد اعتماد الکترونیک (اینماد) */}
+            <a
+              referrerPolicy="origin"
+              target="_blank"
+              rel="noopener noreferrer"
+              href="https://trustseal.enamad.ir/?id=8605075&Code=bIe1f0X03fgKyavuDUf7K17NbqIfa27p"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                referrerPolicy="origin"
+                src="https://trustseal.enamad.ir/logo.aspx?id=8605075&Code=bIe1f0X03fgKyavuDUf7K17NbqIfa27p"
+                alt="نماد اعتماد الکترونیک"
+                style={{ cursor: "pointer" }}
+                className="h-[56px] w-auto"
+              />
+            </a>
+            <span>© {PERSIAN_YEAR} متال سنتر. تمامی حقوق محفوظ است.</span>
+          </div>
           {s.catalog_pdf_url ? (
             <a
               href={s.catalog_pdf_url}
