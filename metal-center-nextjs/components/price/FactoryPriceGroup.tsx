@@ -12,6 +12,16 @@ import { PRIMARY_PHONE } from "@/lib/site";
 
 const norm = (s: string) => s.replace(/[‌\s]/g, "");
 
+type Col = { key: string; label: string };
+
+// ستون‌های پیش‌فرض، وقتی دسته‌ای تنظیم ستون ندارد
+const DEFAULT_COLS: Col[] = [
+  { key: "weight_kg", label: "وزن (kg / شاخه ۱۲ متری)" },
+  { key: "price", label: "قیمت (تومان)" },
+];
+// ستون نوسان همیشه بعد از قیمت می‌آید و خودکار حساب می‌شود
+const CHANGE_COL: Col = { key: "__change", label: "نوسان" };
+
 // نمودار کوچک: اگر داده‌ی کافی یا تغییر نداشته باشد، چیزی نشان نمی‌دهد
 function Sparkline({ points }: { points: number[] }) {
   if (points.length < 2) return null;
@@ -80,8 +90,8 @@ function PriceCell({ row, vat }: { row: PriceRow; vat: number }) {
   );
 }
 
-// برچسب‌های گرید، محل بارگیری و مشخصات اختصاصی
-function MetaChips({ row }: { row: PriceRow }) {
+// روی گوشی، گرید، محل بارگیری و ستون‌های اختصاصی زیر نام محصول دیده می‌شوند (روی دسکتاپ ستون جدا هستند)
+function MobileChips({ row }: { row: PriceRow }) {
   const items = [
     ...(row.grade ? [{ label: row.colLabels?.grade ?? "گرید", value: row.grade }] : []),
     ...(row.loadingPlace ? [{ label: row.colLabels?.loadingPlace ?? "بارگیری", value: row.loadingPlace }] : []),
@@ -89,7 +99,7 @@ function MetaChips({ row }: { row: PriceRow }) {
   ];
   if (items.length === 0) return null;
   return (
-    <div className="mt-1 flex flex-wrap gap-1">
+    <div className="mt-1 flex flex-wrap gap-1 sm:hidden">
       {items.map((a) => (
         <span key={a.label} className="rounded bg-steel px-1 py-px text-[10px] font-semibold text-ink/65 dark:bg-white/5 dark:text-white/60">
           {a.label}: <span dir="ltr">{a.value}</span>
@@ -110,6 +120,14 @@ function FactoryAvatar({ name, logoUrl }: { name: string; logoUrl?: string }) {
   );
 }
 
+// مقدار یک ستون برای یک ردیف
+function valueOf(r: PriceRow, c: Col): string {
+  if (c.key === "weight_kg") return r.weight;
+  if (c.key === "grade") return r.grade || "—";
+  if (c.key === "loading_place") return r.loadingPlace || "—";
+  return r.attrs?.find((a) => a.label === c.label)?.value || "—";
+}
+
 export default function FactoryPriceGroup({
   group,
   includeVAT,
@@ -127,6 +145,16 @@ export default function FactoryPriceGroup({
   const vat = includeVAT ? 1.1 : 1;
   const delivery = group.delivery && group.delivery !== "—" ? group.delivery : null;
   const canSelect = (key: string) => selected.includes(key) || selected.length < 4;
+
+  // ستون‌های جدول به ترتیب تنظیم پنل؛ اگر ردیف‌ها از دسته‌های مختلف‌اند، ترتیب اولین دیده‌شده حفظ می‌شود
+  const seen = new Map<string, Col>();
+  for (const r of group.rows) for (const c of r.cols ?? []) if (!seen.has(c.key)) seen.set(c.key, c);
+  const cols: Col[] = seen.size > 0 ? Array.from(seen.values()) : DEFAULT_COLS;
+  const priceInCols = cols.some((c) => c.key === "price");
+  // قیمت و نوسان کنار هم: نوسان بعد از قیمت
+  const slots: Col[] = priceInCols
+    ? cols.flatMap((c) => (c.key === "price" ? [c, CHANGE_COL] : [c]))
+    : [...cols, CHANGE_COL];
 
   return (
     <div className="mb-5 overflow-hidden rounded-card border border-border-light bg-white shadow-soft dark:border-border-dark dark:bg-surface-dark">
@@ -177,10 +205,13 @@ export default function FactoryPriceGroup({
                   <tr className="bg-steel text-[11px] text-ink/50 dark:bg-white/5 dark:text-white/40 sm:text-xs">
                     <th className="w-8 p-2 text-start sm:p-3"><span className="sr-only">مقایسه</span></th>
                     <th className="p-2 text-start sm:p-3">محصول / سایز</th>
-                    <th className="hidden p-3 text-start sm:table-cell">وزن (kg/m)</th>
-                    <th className="p-2 text-start sm:p-3">قیمت</th>
-                    <th className="hidden p-3 text-start sm:table-cell">تغییر</th>
-                    <th className="hidden p-3 text-start sm:table-cell">روند</th>
+                    {slots.map((c) =>
+                      c.key === "price" ? (
+                        <th key={c.key} className="p-2 text-start sm:p-3">{c.label}</th>
+                      ) : (
+                        <th key={c.key} className="hidden p-3 text-start sm:table-cell">{c.label}</th>
+                      )
+                    )}
                     <th className="hidden p-3 text-start sm:table-cell">موجودی</th>
                     <th className="hidden p-3 text-start sm:table-cell">عملیات</th>
                   </tr>
@@ -209,36 +240,49 @@ export default function FactoryPriceGroup({
                           <div className="mt-1 sm:hidden">
                             <StockBadge stock={r.stock} />
                           </div>
-                          <MetaChips row={r} />
+                          <MobileChips row={r} />
                         </td>
 
-                        <td className="hidden p-3 text-ink/50 dark:text-white/40 sm:table-cell">{r.weight}</td>
-
-                        <td className="p-2 sm:p-3">
-                          <PriceCell row={r} vat={vat} />
-                          {/* روی گوشی: تغییر قیمت، نمودار و تماس زیر قیمت */}
-                          <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 sm:hidden">
-                            <ChangeCell row={r} />
-                            {hasPrice && (
-                              <button onClick={() => setChartRow(r)} className="inline-flex items-center gap-0.5 text-[11px] font-bold text-blue">
-                                <BarChart3 size={12} /> نمودار
-                              </button>
-                            )}
-                            <a href={`tel:${PRIMARY_PHONE}`} className="inline-flex items-center gap-0.5 text-[11px] font-bold text-blue">
-                              <Phone size={12} /> تماس
-                            </a>
-                          </div>
-                        </td>
-
-                        <td className="hidden p-3 sm:table-cell"><ChangeCell row={r} /></td>
-
-                        <td className="hidden p-3 sm:table-cell">
-                          {hasPrice && (
-                            <button onClick={() => setChartRow(r)} aria-label="نمودار قیمت">
-                              <Sparkline points={r.spark} />
-                            </button>
-                          )}
-                        </td>
+                        {slots.map((c) => {
+                          if (c.key === "price") {
+                            return (
+                              <td key={c.key} className="p-2 sm:p-3">
+                                <PriceCell row={r} vat={vat} />
+                                {/* روی گوشی: نوسان، نمودار و تماس زیر قیمت */}
+                                <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 sm:hidden">
+                                  <ChangeCell row={r} />
+                                  {hasPrice && (
+                                    <button onClick={() => setChartRow(r)} className="inline-flex items-center gap-0.5 text-[11px] font-bold text-blue">
+                                      <BarChart3 size={12} /> نمودار
+                                    </button>
+                                  )}
+                                  <a href={`tel:${PRIMARY_PHONE}`} className="inline-flex items-center gap-0.5 text-[11px] font-bold text-blue">
+                                    <Phone size={12} /> تماس
+                                  </a>
+                                </div>
+                              </td>
+                            );
+                          }
+                          if (c.key === CHANGE_COL.key) {
+                            return (
+                              <td key={c.key} className="hidden p-3 sm:table-cell">
+                                <div className="flex flex-col items-start gap-1">
+                                  <ChangeCell row={r} />
+                                  {hasPrice && (
+                                    <button onClick={() => setChartRow(r)} aria-label="نمودار قیمت">
+                                      <Sparkline points={r.spark} />
+                                    </button>
+                                  )}
+                                </div>
+                              </td>
+                            );
+                          }
+                          return (
+                            <td key={c.key} className="hidden p-3 text-ink/70 dark:text-white/60 sm:table-cell">
+                              {valueOf(r, c)}
+                            </td>
+                          );
+                        })}
 
                         <td className="hidden p-3 sm:table-cell"><StockBadge stock={r.stock} /></td>
 

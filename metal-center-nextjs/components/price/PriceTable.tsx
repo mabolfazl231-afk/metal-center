@@ -41,7 +41,7 @@ export default function PriceTable({ rows }: { rows: PriceRow[] }) {
   }
 
   function exportCSV() {
-    const header = "محصول,کارخانه,قیمت,تغییر\n";
+    const header = "محصول,کارخانه,قیمت,نوسان\n";
     const body = filtered.map((r) => `${r.name},${r.factory},${r.price},${r.change}%`).join("\n");
     const blob = new Blob(["\uFEFF" + header + body], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
@@ -105,7 +105,7 @@ export default function PriceTable({ rows }: { rows: PriceRow[] }) {
               </th>
               <th className="p-3.5 text-start font-semibold">
                 <button onClick={() => toggleSort("change")} className="flex items-center gap-1">
-                  تغییر <ArrowUpDown size={12} />
+                  نوسان <ArrowUpDown size={12} />
                 </button>
               </th>
             </tr>
