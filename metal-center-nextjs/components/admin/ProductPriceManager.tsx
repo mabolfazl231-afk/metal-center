@@ -167,12 +167,9 @@ export default function ProductPriceManager() {
     setRows((list) => list.map((r) => (r.id === id ? ({ ...r, ...patch } as Row) : r)));
   }
 
-  // حذف محصول؛ اگر در استعلام‌ها استفاده شده باشد حذف نمی‌شود و باید مخفی شود
+  // حذف محصول؛ تاریخچه‌ی قیمت آن هم پاک می‌شود، ولی استعلام‌های قبلی نام محصول را خودشان نگه می‌دارند
   async function deleteProduct(r: Row) {
     if (!window.confirm(`«${r.name} ${r.size}» حذف شود؟ این کار برگشت ندارد.`)) return;
-    const { count, error: cErr } = await supabase.from("rfq_items").select("id", { count: "exact", head: true }).eq("product_id", r.id);
-    if (cErr) return flash("err", "بررسی استعلام‌ها ناموفق بود: " + cErr.message);
-    if ((count ?? 0) > 0) return flash("err", "این محصول در استعلام‌ها استفاده شده و حذف نمی‌شود. به‌جای آن مخفی کن.");
     const { error } = await supabase.from("products").delete().eq("id", r.id);
     if (error) return flash("err", "حذف نشد: " + error.message);
     setRows((list) => list.filter((x) => x.id !== r.id));

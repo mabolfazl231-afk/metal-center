@@ -186,12 +186,15 @@ export default function PriceSheet() {
   // هر تغییر، کل فهرست ستون‌های دسته را ذخیره می‌کند
   async function saveCfg(next: ColCfg[]) {
     if (!selCat) return;
+    // زیرمجموعه‌ای که ستون اختصاصی ندارد، ستون‌هایش را از والد می‌گیرد؛ پس تغییر را روی والد ذخیره می‌کنیم
+    // تا همه‌ی زیرمجموعه‌ها هم ببینند و دیگر جدا نمی‌شوند
+    const target = !selCat.table_config?.length && parentCat ? parentCat : selCat;
     setBusy(true);
-    const { error } = await supabase.from("categories").update({ table_config: next }).eq("id", selCat.id);
+    const { error } = await supabase.from("categories").update({ table_config: next }).eq("id", target.id);
     setBusy(false);
     if (error) return flash("err", "ذخیره ستون‌ها ناموفق بود: " + error.message);
-    setCats((list) => list.map((c) => (c.id === selCat.id ? { ...c, table_config: next } : c)));
-    flash("ok", "ستون‌ها ذخیره شد.");
+    setCats((list) => list.map((c) => (c.id === target.id ? { ...c, table_config: next } : c)));
+    flash("ok", target === selCat ? "ستون‌ها ذخیره شد." : `ستون‌ها روی «${target.name}» ذخیره شد و برای همه‌ی زیرمجموعه‌هایش دیده می‌شود.`);
   }
 
   function moveCol(i: number, dir: -1 | 1) {
@@ -287,12 +290,7 @@ export default function PriceSheet() {
 
   async function removeRow(p: Prod) {
     if (!window.confirm(`«${p.name}» حذف شود؟ این کار برگشت ندارد.`)) return;
-    const { count, error: cErr } = await supabase
-      .from("rfq_items")
-      .select("id", { count: "exact", head: true })
-      .eq("product_id", p.id);
-    if (cErr) return flash("err", "بررسی استعلام‌ها ناموفق بود: " + cErr.message);
-    if ((count ?? 0) > 0) return flash("err", "این محصول در استعلام‌ها استفاده شده و حذف نمی‌شود.");
+    // استعلام‌های قبلی نام محصول را در خودشان دارند؛ پس حذف محصول آن‌ها را خراب نمی‌کند
     const { error } = await supabase.from("products").delete().eq("id", p.id);
     if (error) return flash("err", "حذف نشد: " + error.message);
     setRows((list) => list.filter((x) => x.id !== p.id));
