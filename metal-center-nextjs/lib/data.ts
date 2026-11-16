@@ -110,6 +110,8 @@ export interface PriceRow {
   updatedAt?: string;          // آخرین زمان ثبت قیمت (ISO)
   hasChange?: boolean;         // فقط وقتی true است که حداقل دو قیمت واقعی برای مقایسه باشد
   columns?: string[];          // همه‌ی ستون‌های اختصاصی دسته
+  // ستون‌های جدول این دسته، به ترتیب تنظیم در پنل، با نام همان‌جا (بدون ستون‌های پنهان)
+  cols?: { key: string; label: string }[];
 }
 
 export interface FactoryGroup {

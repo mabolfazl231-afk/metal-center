@@ -29,6 +29,9 @@ type DbProduct = {
   daily_prices: DbPrice[] | null;
 };
 
+// این ستون‌ها در جدول قیمت ستون جدا نیستند: نام محصول و کارخانه بالای جدول‌اند، واحد داخل سلول قیمت است
+const NOT_IN_TABLE = ["name", "size", "factory", "unit"];
+
 function shortNameOf(name: string) {
   const words = name.split(" ").filter((w) => w && w !== "فولاد");
   return (words[0] ?? name).slice(0, 2);
@@ -106,7 +109,10 @@ export async function fetchPriceGroups(): Promise<FactoryGroup[]> {
     const prices = [...(p.daily_prices ?? [])].sort((a, b) => (a.recorded_at < b.recorded_at ? 1 : -1));
     const latest = prices[0];
     const price = latest ? Number(latest.price) : 0;
-    const hasChange = prices.length >= 2 && latest.change_percent != null;
+    // نوسان خودکار: درصد تغییر قیمت جدید نسبت به قیمت قبلی (از تاریخچه‌ی واقعی)
+    const prevPrice = prices.length >= 2 ? Number(prices[1].price) : 0;
+    const hasChange = prices.length >= 2 && price > 0 && prevPrice > 0;
+    const change = hasChange ? Math.round(((price - prevPrice) / prevPrice) * 1000) / 10 : 0;
     const hidden = hiddenOf(p);
 
     const row: PriceRow = {
@@ -122,13 +128,16 @@ export async function fetchPriceGroups(): Promise<FactoryGroup[]> {
       unit: hidden.includes("unit") ? "" : p.price_unit ?? "",
       colLabels: { grade: labelOf(p, "grade"), loadingPlace: labelOf(p, "loading_place") },
       price: p.call_for_price ? 0 : price,
-      change: hasChange ? Number(latest.change_percent) : 0,
+      change,
       hasChange,
       updatedAt: latest?.recorded_at,
       callForPrice: p.call_for_price === true,
       stock: p.in_stock === false ? "ناموجود" : price ? "موجود" : "نامشخص",
       attrs: attrsOf(p),
       columns: columnsOf(p),
+      cols: cfgOf(p)
+        .filter((c) => !c.hidden && !NOT_IN_TABLE.includes(c.key))
+        .map((c) => ({ key: c.key, label: c.label })),
       // فقط ۹۰ نقطه‌ی آخر برای نمودار؛ داده‌ی کمتر یعنی صفحه‌ی سریع‌تر
       history: [...prices].reverse().slice(-90).map((x) => ({ price: Number(x.price), at: x.recorded_at })),
       spark: prices.length > 1 ? prices.slice(0, 12).reverse().map((x) => Number(x.price)) : [],
